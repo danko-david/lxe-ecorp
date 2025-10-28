@@ -1,0 +1,74 @@
+
+x-def: &def
+  restart: unless-stopped
+  networks:
+    core:
+  dns:
+    - 172.30.0.10
+
+services:
+  dns:
+    build:
+      context: units/dns
+    restart: unless-stopped
+    volumes:
+      # zone configurations
+      - ./data/dns/zones:/dns/zones
+    networks:
+      core:
+        ipv4_address: 172.30.0.10
+
+  controller:
+    <<: *def
+    build:
+      context: units/controller
+    environment:
+      DNS_CORE_ZONE_NAME: e-corp.intra.net
+    volumes:
+      - ./:/ecorp
+      - ./data/controller/root:/root
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  gitlab:
+    <<: *def
+    image: 'gitlab/gitlab-ce:latest'
+    environment:
+      - GITLAB_ROOT_PASSWORD=${GITLAB_ROOT_PASSWORD:-@Password123}
+      - GITLAB_OMNIBUS_CONFIG="external_url 'http://gitlab.e-corp.intra.net'"
+    volumes:
+      - ./data/gitlab/config:/etc/gitlab
+      - ./data/gitlab/logs:/var/log/gitlab
+      - ./data/gitlab/data:/var/opt/gitlab
+  
+  
+
+  www:
+    <<: *def
+    build:
+      context: units/www
+    labels:
+      - dns_names: "collab chat"
+
+
+  mattermost:
+    <<: *def
+    image: mattermost/mattermost-preview
+
+#//- dns _for_ dns server for name resolution
+#- samba _for_ AD functionalities
+#- samba _for_ fileshare
+#//- gitlab _for_ code management and CI/CD
+#- redmine _for_ ticketing 
+#- nexus _for_ package management and external package mirroring
+#- squid _for_ external resource mirroring
+#- squid _for_ separation and filtering for user workstations
+#- nextcloud/mattermost _for_ teams and sharepoint alternative
+# mail?
+
+
+networks:
+  core:
+    ipam:
+      driver: default
+      config:
+        - subnet: "172.30.0.0/24"
