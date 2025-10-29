@@ -58,15 +58,23 @@ services:
       - ./data/gitlab/config:/etc/gitlab
       - ./data/gitlab/logs:/var/log/gitlab
       - ./data/gitlab/data:/var/opt/gitlab
-  
-  
+
+  core-gitlab-runner:
+    <<: *def
+    image: gitlab/gitlab-runner:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./data/gitlab-runner/conf:/etc/gitlab-runner
 
   www:
     <<: *def
     build:
       context: units/www
     labels:
-      - dns_names: "collab chat"
+      # extra dns record to this container
+      dns_names: "collab chat ticket *.all"
+      # extra record used to generate virtual server
+      ingress: "collab|mattermost:8065"
 
 
   mattermost:
@@ -83,7 +91,6 @@ services:
 #- squid _for_ separation and filtering for user workstations
 #- nextcloud/mattermost _for_ teams and sharepoint alternative
 # mail?
-
 
 networks:
   core:

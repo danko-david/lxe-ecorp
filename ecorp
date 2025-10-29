@@ -76,7 +76,7 @@ regenerate_dns_zone_docker()
 
 EOF
 
-	docker ps -q | xargs -n 1 docker inspect --format '{{range .NetworkSettings.Networks}}{{ range .DNSNames}} {{.}} {{end}}{{end}} {{range .NetworkSettings.Networks}} {{.IPAddress}}{{end}}' \
+	docker ps -q | xargs -n 1 docker inspect --format '{{ if .Config.Labels.dns_names }}{{ .Config.Labels.dns_names }}{{end}} {{range .NetworkSettings.Networks}}{{ range .DNSNames}} {{.}} {{end}}{{end}} {{range .NetworkSettings.Networks}} {{.IPAddress}}{{end}}' \
 	| while read -r -a REC
 	do
 		pn=${#REC[@]}
