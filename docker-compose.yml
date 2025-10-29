@@ -21,15 +21,15 @@ services:
   dc:
     <<: *def
     privileged: true # required to manage file ACLs
-    hostname: dc.ecorp.intra
+    hostname: dc.${DC_DOMAIN}
     build:
       context: units/dc
     #image: diegogslomp/samba-ad-dc
     environment:
-      - DNS_FORWARDER=172.30.0.9
-      - DC_REALM=ecorp
-      - DC_DOMAIN=ecorp.intra
-      - ADMIN_PASS=Passw0rd
+      - DC_DNS_FORWARDER=172.30.0.9
+      - DC_REALM
+      - DC_DOMAIN
+      - DC_ADMIN_PASS
     #volumes:
       - ./data/dc/data/samba/private:/var/lib/samba/private
       - ./data/dc/data/samba/sysvol:/var/lib/samba/sysvol
@@ -42,7 +42,7 @@ services:
     build:
       context: units/controller
     environment:
-      DNS_CORE_ZONE_NAME: e-corp.intra.net
+      DNS_CORE_ZONE_NAME: ${DNS_CORE_ZONE_NAME}
     volumes:
       - ./:/ecorp
       - ./data/controller/root:/root
@@ -52,7 +52,7 @@ services:
     <<: *def
     image: 'gitlab/gitlab-ce:latest'
     environment:
-      - GITLAB_ROOT_PASSWORD=${GITLAB_ROOT_PASSWORD:-@Password123}
+      - GITLAB_ROOT_PASSWORD
       - GITLAB_OMNIBUS_CONFIG="external_url 'http://gitlab.e-corp.intra.net'"
     volumes:
       - ./data/gitlab/config:/etc/gitlab
