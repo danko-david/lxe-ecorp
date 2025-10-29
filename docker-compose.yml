@@ -16,6 +16,25 @@ services:
       - ./data/dns/zones:/dns/zones
     networks:
       core:
+        ipv4_address: 172.30.0.9
+
+  dc:
+    <<: *def
+    privileged: true # required to manage file ACLs
+    hostname: dc.ecorp.intra
+    build:
+      context: units/dc
+    #image: diegogslomp/samba-ad-dc
+    environment:
+      - DNS_FORWARDER=172.30.0.9
+      - DC_REALM=ecorp
+      - DC_DOMAIN=ecorp.intra
+      - ADMIN_PASS=Passw0rd
+    #volumes:
+      - ./data/dc/data/samba/private:/var/lib/samba/private
+      - ./data/dc/data/samba/sysvol:/var/lib/samba/sysvol
+    networks:
+      core:
         ipv4_address: 172.30.0.10
 
   controller:
