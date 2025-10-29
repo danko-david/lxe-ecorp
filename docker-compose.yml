@@ -24,15 +24,14 @@ services:
     hostname: dc.${DC_DOMAIN}
     build:
       context: units/dc
-    #image: diegogslomp/samba-ad-dc
     environment:
       - DC_DNS_FORWARDER=172.30.0.9
       - DC_REALM
       - DC_DOMAIN
       - DC_ADMIN_PASS
-    #volumes:
-      - ./data/dc/data/samba/private:/var/lib/samba/private
-      - ./data/dc/data/samba/sysvol:/var/lib/samba/sysvol
+    # can't bind mount with acl support, so I use a volume
+    volumes:
+      - samba:/var/lib/samba/
     networks:
       core:
         ipv4_address: 172.30.0.10
@@ -91,6 +90,9 @@ services:
 #- squid _for_ separation and filtering for user workstations
 #- nextcloud/mattermost _for_ teams and sharepoint alternative
 # mail?
+
+volumes:
+  samba:
 
 networks:
   core:
