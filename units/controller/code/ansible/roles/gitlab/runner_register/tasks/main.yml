@@ -1,0 +1,11 @@
+- name: Check if GitLab Runner is already registered
+  ansible.builtin.shell: |
+    docker exec ecorp-core-gitlab-runner-1 gitlab-runner list 2>&1 | grep "Core infra runner"
+  register: runner_exists
+  ignore_errors: true
+  changed_when: false
+  delegate_to: localhost
+
+- name: Register GitLab Runner
+  when: runner_exists.rc != 0
+  ansible.builtin.include_tasks: register_runner.yml

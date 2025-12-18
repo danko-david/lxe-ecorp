@@ -11,7 +11,8 @@ FROM debian:latest
     RUN apt-get install -y ansible sshpass
 
 # install services
-    RUN apt-get install -y apache2 python3 python3-pip cron
+    RUN apt-get install -y apache2 python3 python3-pip cron ssh
+    RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
 # install docker (source: https://docs.docker.com/engine/install/debian/#install-using-the-repository)
     RUN install -m 0755 -d /etc/apt/keyrings
@@ -36,7 +37,6 @@ FROM debian:latest
     RUN echo 'Types: deb\nURIs: https://download.vscodium.com/debs\nSuites: vscodium\nComponents: main\nArchitectures: amd64 arm64\nSigned-by: /usr/share/keyrings/vscodium-archive-keyring.gpg' > /etc/apt/sources.list.d/vscodium.sources
     RUN apt-get update
     RUN apt-get install -y codium
-
 
 RUN echo "root:password" | chpasswd 
 

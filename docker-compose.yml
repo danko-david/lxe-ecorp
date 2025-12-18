@@ -4,7 +4,8 @@ x-def: &def
   networks:
     core:
   dns:
-    - 172.30.0.10
+    # Yes, we use DC as DNS of course
+    - ${NET_DC}
 
 services:
   dns:
@@ -16,7 +17,7 @@ services:
       - ./data/dns/zones:/dns/zones
     networks:
       core:
-        ipv4_address: 172.30.0.9
+        ipv4_address: ${NET_DNS}
 
   dc:
     <<: *def
@@ -25,23 +26,26 @@ services:
     build:
       context: units/dc
     environment:
-      - DC_DNS_FORWARDER=172.30.0.9
+      - DC_DNS_FORWARDER=${NET_DNS}
       - DC_REALM
       - DC_DOMAIN
       - DC_ADMIN_PASS
     # can't bind mount with acl support, so I use a volume
     volumes:
-      - samba:/var/lib/samba/
+      - dc:/var/lib/samba/
     networks:
       core:
-        ipv4_address: 172.30.0.10
+        ipv4_address: ${NET_DC}
 
   controller:
     <<: *def
     build:
       context: units/controller
     environment:
-      DNS_CORE_ZONE_NAME: ${DNS_CORE_ZONE_NAME}
+      - DNS_CORE_ZONE_NAME
+      - DC_REALM
+      - DC_DOMAIN
+      - DC_ADMIN_PASS
     volumes:
       - ./:/ecorp
       - ./data/controller/root:/root
@@ -52,7 +56,6 @@ services:
     image: 'gitlab/gitlab-ce:latest'
     environment:
       - GITLAB_ROOT_PASSWORD
-      - GITLAB_OMNIBUS_CONFIG="external_url 'http://gitlab.e-corp.intra.net'"
     volumes:
       - ./data/gitlab/config:/etc/gitlab
       - ./data/gitlab/logs:/var/log/gitlab
@@ -79,6 +82,8 @@ services:
   mattermost:
     <<: *def
     image: mattermost/mattermost-preview
+    volumes:
+      - ./data/mattermost/data:/mm/mattermost-data
 
 #//- dns _for_ dns server for name resolution
 #- samba _for_ AD functionalities
@@ -92,11 +97,12 @@ services:
 # mail?
 
 volumes:
-  samba:
+  # I dont like this, but ACLs does not works with bind
+  dc:
 
 networks:
   core:
     ipam:
       driver: default
       config:
-        - subnet: "172.30.0.0/24"
+        - subnet: ${NET_CIDR} 

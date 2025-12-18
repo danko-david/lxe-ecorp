@@ -1,0 +1,30 @@
+- name: Configure LDAP in GitLab
+  blockinfile:
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - LDAP CONFIG"
+    path: /ecorp/data/gitlab/config/gitlab.rb
+    block: |
+      gitlab_rails['ldap_enabled'] = true
+      gitlab_rails['ldap_sync_worker_cron'] = "0 */10 * * *"
+      gitlab_rails['ldap_servers'] = {
+        'main' => {
+          'label' => 'LDAP',
+          'host' => 'dc.{{ lookup("env", "DNS_CORE_ZONE_NAME") }}',
+          'port' => 636,
+          'uid' => 'sAMAccountName',
+          'bind_dn' => 'Administrator@{{ lookup("env", "DC_DOMAIN") }}',
+          'password' => '{{ lookup("env", "DC_ADMIN_PASS") }}',
+          'encryption' => 'simple_tls',
+          'verify_certificates' => false,
+          'active_directory' => false,
+          'base' => 'DC={{ lookup("env", "DC_REALM") }}',
+          'user_filter' => '(objectClass=user)',
+          'group_base' => 'OU=groups,DC={{ lookup("env", "DC_REALM") }}',
+          'admin_group' => 'admin',
+          'sync_ssh_keys' => 'sshPublicKey'
+        }
+      }
+  register: ldap_config
+
+- name: Reconfigure GitLab
+  command: "docker exec -t ecorp-gitlab-1 gitlab-ctl reconfigure"
+  when: ldap_config.changed

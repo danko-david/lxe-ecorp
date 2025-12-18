@@ -1,0 +1,52 @@
+ad_users:
+  - user: tcolby
+    password: password
+    given_name: Terry
+    surname: Colby
+    title: Chief Tec
+    roles:
+      - cto
+      - boardmember
+      - admin
+      - audit
+      - officer
+      - devops
+      - developer
+      - operator
+
+# CEO, operator, lead developer, project manager, fe be devs, sales, marketing, secretary
+# robot technical accounts
+
+  - user: x-ealderson
+    password: password
+    given_name: Elliot
+    surname: X Alderson
+    title: Cybersecurity engineer
+    roles:
+      - external
+      - advisor
+      - operator
+
+  - user: hdoofenshmirtz
+    password: password
+    given_name: Heinz
+    surname: Dr. Doofenshmirtz
+    title: Lead Scientist
+    roles:
+      - officer
+      - audit
+      - science
+
+# Otto von Staubsauger
+# Eva Schmetterling
+
+  - user: ddanko
+    password: password
+    given_name: David
+    surname: Danko
+    title: Lead Architect Engineer
+    roles:
+      - admin
+      - devops
+      - developer
+      - operator

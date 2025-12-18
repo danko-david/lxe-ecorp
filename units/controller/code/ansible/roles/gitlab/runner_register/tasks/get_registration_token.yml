@@ -1,0 +1,11 @@
+---
+- name: Get GitLab Runner registration token from GitLab container
+  ansible.builtin.shell: |
+    docker exec ecorp-gitlab-1 gitlab-rails runner "token = Gitlab::CurrentSettings.runners_registration_token; puts token"
+  register: gitlab_runner_registration_token_result
+  changed_when: false
+  delegate_to: localhost
+
+- name: Set GitLab Runner registration token fact
+  ansible.builtin.set_fact:
+    gitlab_runner_registration_token: "{{ gitlab_runner_registration_token_result.stdout | trim }}"

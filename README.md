@@ -24,5 +24,21 @@ Environment CIRD: 172.30/16
 
 ## Other network spaces
 
+## TODOS
+- SSL cerfiticate for: AD, gitlab, gitlab registry (self signed and let's encrypt mirage)
+- test mattermost, integrate to gitlab if it is good for this purpose
+- update global gitlab varaibles
+- import git repos
 
+### TODO controller page
+- show main information from .env
+- run, observe, see last log of ansible provisioning
+- dump CA if self signed is the option
+- create documentation page like in homestack
+
+
+### To test
+Test from zero:
+- open web vscode editor
+- is gitlab's docker registry available?
 

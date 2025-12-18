@@ -1,0 +1,42 @@
+- name: Ensure last_imports directory exists
+  ansible.builtin.file:
+    path: /ecorp/data/controller/last_imports
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
+
+- name: Check if ad-users.yml has changed
+  ansible.builtin.stat:
+    path: /ecorp/data/controller/last_imports/ad-users.yml
+  register: last_ad_users_stat
+  delegate_to: localhost
+
+- name: Read current ad-users.yml
+  ansible.builtin.slurp:
+    src: /ecorp/settings/ad-users.yml
+  register: current_ad_users_content
+  delegate_to: localhost
+
+- name: Read last imported ad-users.yml if it exists
+  ansible.builtin.slurp:
+    src: /ecorp/data/controller/last_imports/ad-users.yml
+  register: last_ad_users_content
+  when: last_ad_users_stat.stat.exists
+  delegate_to: localhost
+
+- name: Set fact if ad-users.yml has changed
+  ansible.builtin.set_fact:
+    ad_users_changed: "{{ not last_ad_users_stat.stat.exists or (current_ad_users_content.content | b64decode) != (last_ad_users_content.content | b64decode) }}"
+  delegate_to: localhost
+
+- name: Import roles and users if ad-users.yml has changed
+  ansible.builtin.include_tasks: import.yml
+  when: ad_users_changed
+
+- name: Copy current ad-users.yml to last_imports if it was imported
+  ansible.builtin.copy:
+    src: /ecorp/settings/ad-users.yml
+    dest: /ecorp/data/controller/last_imports/ad-users.yml
+    remote_src: false
+  when: ad_users_changed
+  delegate_to: localhost

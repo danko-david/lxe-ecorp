@@ -10,6 +10,7 @@ cat << EOF
     server role = active directory domain controller
     workgroup = $DC_DOMAIN
     idmap_ldb:use rfc2307 = yes
+    tls enabled  = yes
 
 [sysvol]
     path = /var/lib/samba/sysvol

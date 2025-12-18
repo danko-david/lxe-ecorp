@@ -1,0 +1,25 @@
+- name: Deactivate password complexity
+  command: "{{ ad_exec }} samba-tool domain passwordsettings set --complexity=off"
+
+- name: "Include user definitions"
+  include_vars:
+    file: /ecorp/settings/ad-users.yml
+
+- name: "Gather all unique roles"
+  set_fact:
+    all_roles: "{{ (all_roles | default([])) + user.roles | unique }}"
+  loop: "{{ ad_users }}"
+  loop_control:
+    loop_var: user
+
+- name: "Create groups for roles if they do not exist"
+  loop: "{{ all_roles }}"
+  loop_control:
+    loop_var: role
+  include_tasks: manage_role.yml
+
+- name: "Add/Update users"
+  loop: "{{ ad_users }}"
+  loop_control:
+    loop_var: user
+  include_tasks: manage_user.yml

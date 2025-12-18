@@ -1,0 +1,17 @@
+- name: Get GitLab Runner registration token
+  ansible.builtin.include_tasks: get_registration_token.yml
+
+- name: Register GitLab Runner
+  ansible.builtin.shell: |
+    docker exec ecorp-core-gitlab-runner-1 gitlab-runner register \
+      --non-interactive \
+      --url "http://gitlab.{{ DNS_CORE_ZONE_NAME }}" \
+      --registration-token "{{ gitlab_runner_registration_token }}" \
+      --executor "docker" \
+      --description "Core infra runner" \
+      --tag-list "core" \
+      --docker-image "alpine:latest" \
+      --run-untagged="false" \
+      --locked="false" \
+      --access-level="not_protected"
+  delegate_to: localhost

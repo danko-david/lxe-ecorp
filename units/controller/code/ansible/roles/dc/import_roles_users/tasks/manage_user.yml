@@ -1,0 +1,33 @@
+- name: "Check if user {{ user.user }} exists"
+  become: true
+  command: "{{ ad_exec }} samba-tool user list"
+  register: existing_users
+  changed_when: false
+
+- name: "Set user facts"
+  set_fact:
+    user_exists: "{{ user.user in existing_users.stdout }}"
+
+- name: "Create user {{ user.user }} if it does not exist"
+  become: true
+  shell: |
+    {{ ad_exec }} samba-tool user create '{{ user.user }}' '{{ user.password }}' \
+    --given-name='{{ user.given_name }}' \
+    --surname='{{ user.surname }}' \
+    --mail-address='{{ user.email | default(user.user+'@'+DNS_CORE_ZONE_NAME) }}' \
+    --job-title='{{ user.title | default('') }}' \
+    --initials='{{ user.initial | default('') }}' \
+  when: not user_exists
+
+- name: "Set password for {{ user.user }}"
+  become: true
+  command: "{{ ad_exec }} samba-tool user setpassword {{ user.user }} --newpassword='{{ user.password }}'"
+
+- name: "Enable user {{ user.user }}"
+  become: true
+  command: "{{ ad_exec }} samba-tool user enable {{ user.user }}"
+
+- name: "Assign user {{ user.user }} to groups"
+  become: true
+  command: "{{ ad_exec }} samba-tool group addmembers {{ item }} {{ user.user }}"
+  loop: "{{ user.roles }}"

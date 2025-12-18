@@ -1,0 +1,10 @@
+- name: "Check if group {{ role }} exists"
+  become: true
+  command: "{{ ad_exec }} samba-tool group list"
+  register: existing_groups
+  changed_when: false
+
+- name: "Create group {{ role }} if it does not exist"
+  become: true
+  command: "{{ ad_exec }} samba-tool group add {{ role }}"
+  when: "role not in existing_groups.stdout"

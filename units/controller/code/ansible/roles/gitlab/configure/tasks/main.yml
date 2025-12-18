@@ -1,0 +1,15 @@
+- name: Configure GitLab
+  blockinfile:
+    marker: "# {mark} ANSIBLE MANAGED BLOCK - custom configuration"
+    path: /ecorp/data/gitlab/config/gitlab.rb
+    block: |
+      external_url 'http://gitlab.{{ DNS_CORE_ZONE_NAME }}'
+      registry_external_url 'http://gitlab.{{ DNS_CORE_ZONE_NAME }}:5005'
+  register: gitlab_config
+
+- name: Reconfigure GitLab
+  command: "docker exec -t ecorp-gitlab-1 gitlab-ctl reconfigure"
+  when: gitlab_config.changed
+
+- name: Wait for GitLab to be ready
+  ansible.builtin.include_tasks: wait_for_gitlab.yml
