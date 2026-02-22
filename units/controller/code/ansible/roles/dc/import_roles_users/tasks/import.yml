@@ -1,6 +1,9 @@
 - name: Deactivate password complexity
   command: "{{ ad_exec }} samba-tool domain passwordsettings set --complexity=off"
 
+- name: Disable password expiry
+  command: "{{ ad_exec }} samba-tool domain passwordsettings set --max-pwd-age=0"
+
 - name: "Include user definitions"
   include_vars:
     file: /ecorp/settings/ad-users.yml

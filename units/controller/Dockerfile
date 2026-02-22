@@ -28,16 +28,8 @@ FROM debian:latest
     RUN apt-get update
     RUN apt-get install -y docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-# install graphical environment xrdp server
-    RUN apt-get install -y xrdp xfce4 xfce4-goodies
-
-# install developer environment
-    RUN wget -qO - https://gitlab.com/paulcarroty/vscodium-deb-rpm-repo/raw/master/pub.gpg \
-    | gpg --dearmor > /usr/share/keyrings/vscodium-archive-keyring.gpg
-    RUN echo 'Types: deb\nURIs: https://download.vscodium.com/debs\nSuites: vscodium\nComponents: main\nArchitectures: amd64 arm64\nSigned-by: /usr/share/keyrings/vscodium-archive-keyring.gpg' > /etc/apt/sources.list.d/vscodium.sources
-    RUN apt-get update
-    RUN apt-get install -y codium
+RUN apt-get install -y pandoc
 
 RUN echo "root:password" | chpasswd 
 
-ENTRYPOINT ["/ecorp/ecorp", "entrypoint"]
+ENTRYPOINT ["/ecorp/units/controller/code/ecorp", "entrypoint"]

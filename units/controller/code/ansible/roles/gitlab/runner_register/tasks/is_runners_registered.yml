@@ -1,0 +1,9 @@
+- name: Set is_runners_registered default value
+  set_fact:
+    is_runners_registered: true
+
+- name: Check runner registered
+  include_tasks: check_runner_registered.yml
+  loop: "{{ runners }}"
+  loop_control:
+    loop_var: runner

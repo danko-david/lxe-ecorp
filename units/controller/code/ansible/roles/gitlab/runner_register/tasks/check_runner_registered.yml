@@ -1,0 +1,13 @@
+- name: Check if GitLab Runner is already registered
+  ansible.builtin.shell: |
+    docker exec ecorp-core-gitlab-runner-1 gitlab-runner list 2>&1 | grep "{{ runner.name }}"
+  register: runner_registered
+  ignore_errors: true
+  changed_when: false
+  delegate_to: localhost
+  when: is_runners_registered
+
+- name: Eval is_runners_registered
+  set_fact:
+    is_runners_registered: "{{ is_runners_registered and runner_registered.rc == 0 }}"
+  when: is_runners_registered

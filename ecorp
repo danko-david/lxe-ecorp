@@ -15,6 +15,21 @@ _rh_try_ret_help()
 	fi
 }
 
+prepare()
+{
+	_rh_try_ret_help 'Do the necessary preparation steps before launching: spawning default config files, creating directories'
+    
+	cd ${ROOT}
+
+    mkdir -p data/dns/zones/
+
+	# disable network segmentation in docker
+	if ! iptables-save | grep -q 'A FORWARD -j ACCEPT'
+	then
+		iptables -t filter -I FORWARD 1 -j ACCEPT
+	fi
+}
+
 up()
 {
     _rh_try_ret_help 'Starts the infrastructure'
@@ -22,119 +37,10 @@ up()
     
     cd ${ROOT}
 
-    mkdir -p data/dns/zones/
-
+	prepare
     docker compose up -d --build
 }
 
-go_dind()
-{
-    _rh_try_ret_help ''
-
-}
-
-controller()
-{
-    _rh_try_ret_help 'Enters the shell of the controller node (if the infrastructure is running)'
-    docker compose exec -it controller bash
-}
-
-##### In container functions #####
-
-entrypoint()
-{
-    _rh_try_ret_help 'Run entrypoint logic inside controller container'
-	
-    service cron start
-    service apache2 start
-
-    # make login possible without CAP_AUDIT_WRITE: https://stackoverflow.com/questions/21391142/why-is-it-needed-to-set-pam-loginuid-to-its-optional-value-with-docker
-	sed -i '/session    required     pam_loginuid.so/c\session    optional   pam_loginuid.so' /etc/pam.d/sshd
-	
-	service ssh start
-	service xrdp start
-
-    service_docker_dns_zones &
-
-	controller_ansible_provision
-
-
-    exec /bin/tail -f /dev/null
-}
-
-controller_ansible_provision()
-{
-	cd /ecorp/units/controller/code/ansible
-	ansible-playbook -i hosts.yml provision.yml "$@"
-}
-
-regenerate_dns_zone_docker()
-{
-	# create docker dir if not exists
-	mkdir -p /ecorp/data/dns/zones/dynamic/docker/
-	# delete all old dynamic files in dir
-	rm -rf /ecorp/data/dns/zones/dynamic/docker/* || true
-
-	{
-		cat << EOF 
-\$ORIGIN ${DNS_CORE_ZONE_NAME}.
-\$TTL 3600
-@   IN  SOA ns1.${DNS_CORE_ZONE_NAME}. admin.${DNS_CORE_ZONE_NAME}. (
-        $RANDOM ; serial
-        3600       ; refresh
-        1800       ; retry
-        1209600    ; expire
-        3600 )     ; minimum
-
-EOF
-
-	docker ps -q | xargs -n 1 docker inspect --format '{{ if .Config.Labels.dns_names }}{{ .Config.Labels.dns_names }}{{end}} {{range .NetworkSettings.Networks}}{{ range .DNSNames}} {{.}} {{end}}{{end}} {{range .NetworkSettings.Networks}} {{.IPAddress}}{{end}}' \
-	| while read -r -a REC
-	do
-		pn=${#REC[@]}
-		if [ $pn '>' 1 ]
-		then
-			lst=$(expr $pn - 1)
-			for e in ${REC[@]:0:$lst}
-			do
-				echo $e IN A ${REC[$lst]}
-			done
-			echo 
-		fi
-	done
-
-	} > /ecorp/data/dns/zones/dynamic/docker/${DNS_CORE_ZONE_NAME}
-}
-
-service_docker_dns_zones()
-{
-    regenerate_dns_zone_docker
-    docker events --filter 'event=start' --filter 'event=restart' --filter 'event=die' | while IFS= read -r line
-    do
-        # Start or die event
-        if grep -qP '^[^ ]+ container (start|die)' <<< $line
-        then
-            regenerate_dns_zone_docker
-        fi
-    done
-}
-
-dc_list_users()
-{
-	_rh_try_ret_help 'List users in Domain Controller inside controller container'
-	source /ecorp/.env
-	
-	export LDAP_SERVER=$NET_DC
-	export LDAP_PORT=636
-	export LDAP_SSL=true
-
-	export LDAP_BIND_DN="Administrator@${DC_DOMAIN}" # Example: 'cn=admin,dc=yourdomain,dc=com'
-	export LDAP_BIND_PASSWORD=$DC_ADMIN_PASS
-	
-	export LDAP_SEARCH_BASE="dc=$DC_REALM" # Example: 'dc=yourdomain,dc=com'
-
-	exec /ecorp/dev/ldap_list_users.py
-}
 
 ############################ RH built-in functions #############################
 

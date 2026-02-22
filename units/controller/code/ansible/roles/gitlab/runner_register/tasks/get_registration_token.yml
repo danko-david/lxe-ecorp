@@ -1,4 +1,3 @@
----
 - name: Get GitLab Runner registration token from GitLab container
   ansible.builtin.shell: |
     docker exec ecorp-gitlab-1 gitlab-rails runner "token = Gitlab::CurrentSettings.runners_registration_token; puts token"
