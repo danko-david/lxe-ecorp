@@ -3,7 +3,7 @@ ad_users:
     password: password
     given_name: Terry
     surname: Colby
-    title: Chief Tec
+    title: Chief Technology Officer
     roles:
       - cto
       - boardmember
@@ -48,5 +48,23 @@ ad_users:
     roles:
       - admin
       - devops
+      - developer
+      - operator
+  
+  - user: hal9000
+    password: password
+    given_name: "9000"
+    surname: HAL
+    title: Heuristically Programmed Algorithmic Computer
+    roles:
+      - developer
+      - operator
+  
+  - user: mcp
+    password: password
+    given_name: "Control Program"
+    surname: Master
+    title: 
+    roles:
       - developer
       - operator
