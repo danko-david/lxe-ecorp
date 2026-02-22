@@ -61,10 +61,13 @@ entrypoint()
 
     # kerberos config
     #cfg_krb5_conf > /etc/krb5.conf.d/samba-dc   
+    if [ ! -e /var/lib/samba/domain_provisioned ]
+    then
+      samba-tool domain provision --server-role=dc --use-rfc2307 --dns-backend=SAMBA_INTERNAL \
+        --realm=$DC_REALM --domain=$DC_DOMAIN --adminpass=$DC_ADMIN_PASS
 
-    samba-tool domain provision --server-role=dc --use-rfc2307 --dns-backend=SAMBA_INTERNAL \
-     --realm=$DC_REALM --domain=$DC_DOMAIN --adminpass=$DC_ADMIN_PASS
-
+      touch /var/lib/samba/domain_provisioned
+    fi
     # start service
     service samba-ad-dc start
 
