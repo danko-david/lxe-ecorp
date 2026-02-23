@@ -91,10 +91,7 @@ services:
 #//- gitlab _for_ code management and CI/CD
 #- redmine _for_ ticketing 
 #- nexus _for_ package management and external package mirroring
-#- squid _for_ external resource mirroring
-#- squid _for_ separation and filtering for user workstations
 #- nextcloud/mattermost _for_ teams and sharepoint alternative
-# mail?
 
 volumes:
   # I dont like this, but ACLs does not works with bind

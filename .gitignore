@@ -1,0 +1,5 @@
+data
+tmp
+*.gitignore.*
+gitignore.*
+.env
