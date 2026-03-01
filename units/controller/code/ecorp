@@ -21,17 +21,21 @@ entrypoint()
 {
     _rh_try_ret_help 'Run entrypoint logic inside controller container'
 
-	if [ ! -z $HOME_WWW_USER ] && [ ! -z $HOME_WWW_PASSWORD ]
-	then
-		rm /tmp/htpasswd || true
-		htpasswd -bc /tmp/htpasswd $HOME_WWW_USER $HOME_WWW_PASSWORD
-	fi
-
 	# Make docker available for www-data.
 	# Align group 'docker' uid to host uid and add www-data to docker group
 	groupdel docker || true
 	groupadd -o -g $(ls -lah /var/run/docker.sock | awk '{print $4}') docker || true
 	usermod -aG docker www-data
+
+	# Place right at the start, in first start dns container is dying because of missing
+	# Corefile configuration, so generate as fast as possible.
+	service_docker_dns_zones &
+
+	if [ ! -z $HOME_WWW_USER ] && [ ! -z $HOME_WWW_PASSWORD ]
+	then
+		rm /tmp/htpasswd || true
+		htpasswd -bc /tmp/htpasswd $HOME_WWW_USER $HOME_WWW_PASSWORD
+	fi
 
 	www_conf > /etc/apache2/sites-enabled/000-default.conf
 	a2enmod cgi
@@ -45,8 +49,6 @@ entrypoint()
 	gen_ssh_master_key
 
 	service ssh start
-
-    service_docker_dns_zones &
 
 	controller_ansible_provision
 
@@ -90,32 +92,93 @@ regenerate_dns_zone_docker()
 
 EOF
 
-	docker ps -q | xargs -n 1 docker inspect --format '{{ if .Config.Labels.dns_names }}{{ .Config.Labels.dns_names }}{{end}} {{range .NetworkSettings.Networks}}{{ range .DNSNames}} {{.}} {{end}}{{end}} {{range .NetworkSettings.Networks}} {{.IPAddress}}{{end}}' \
-	| while read -r -a REC
+	DOCKER_DATA=$(docker ps -q | xargs -n 1 docker inspect --format '{{index .Config.Labels "dns_mode" }} {{ if .Config.Labels.dns_names }}{{ .Config.Labels.dns_names }}{{end}} {{range .NetworkSettings.Networks}}{{ range .DNSNames}} {{.}} {{end}}{{end}} {{range .NetworkSettings.Networks}} {{.IPAddress}}{{end}}')
+
+	while read -r -a REC
 	do
 		pn=${#REC[@]}
 		if [ $pn '>' 1 ]
 		then
 			lst=$(expr $pn - 1)
-			for e in ${REC[@]:0:$lst}
+			lstp=$(expr $pn - 2)
+			for e in ${REC[@]:1:$lstp}
 			do
-				if [ ! -z $DNS_NAME_TRANSFORM ]
+				if [ "delegated" = "${REC[0]}" ]
 				then
-					TR=$($DNS_NAME_TRANSFORM $e)
-					if [ "${TR}" != "${e}" ]
+					# only records witouth dot
+					if ! [[ "${e}" =~ \. ]]
 					then
-						echo $TR IN A ${REC[$lst]}
+						echo ${e}.ecorp-original-ip IN A ${REC[$lst]}
 					fi
+				else
+					echo $e IN A ${REC[$lst]}
 				fi
-
-				echo $e IN A ${REC[$lst]}
 			done
 			echo 
 		fi
-	done
+	done <<< "$DOCKER_DATA"
 
 	} > /ecorp/data/dns/zones/dynamic/docker/${DNS_CORE_ZONE_NAME}
+
+	{
+	while read -r -a REC
+	do
+		pn=${#REC[@]}
+		if [ $pn '>' 1 ]
+		then
+			if [ "delegated" = "${REC[0]}" ]
+			then
+				NAMES=()
+			
+				lst=$(expr $pn - 1)
+				lstp=$(expr $pn - 2)
+				for e in ${REC[@]:1:$lstp}
+				do
+					
+				# only records witouth dot and not starting with number
+				if ! [[ "${e}" =~ \. ]] && ! grep -qP '^\d' <<< "${e}"
+				then
+				ESC_RECORD=$(sed 's/\./\\./g' <<< "${e}.${DNS_CORE_ZONE_NAME}")
+cat << EOF
+${e}.${DNS_CORE_ZONE_NAME} {
+	template ANY ANY ${e}.${DNS_CORE_ZONE_NAME} {
+		match ^${ESC_RECORD}\.$
+		answer "{{ .Name }} 60 IN CNAME ${e}.ecorp-original-ip.${DNS_CORE_ZONE_NAME}."
+		fallthrough
+	}
+	forward . ${REC[$lst]}
 }
+EOF
+				fi
+				done
+			fi
+		fi
+	done <<< "$DOCKER_DATA"
+
+
+cat << EOF
+. {
+    # Serve authoritative zone from a BIND file
+    auto . {
+        directory /dns/zones/ (.*) {1}
+        reload 3s 1s
+    }
+
+    # Include external forwarding rules
+    forward . /etc/resolv.conf
+
+    # Basic logging and health checks
+    #log
+    errors
+    #prometheus :9153
+    ready
+    reload 3s 1s
+}
+EOF
+	} > /ecorp/data/dns/Corefile
+
+}
+
 
 service_docker_dns_zones()
 {

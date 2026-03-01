@@ -9,12 +9,12 @@ x-def: &def
 
 services:
   dns:
-    build:
-      context: units/dns
+    image: coredns/coredns
     restart: unless-stopped
+    entrypoint: /coredns -conf /dns/Corefile
     volumes:
       # zone configurations
-      - ./data/dns/zones:/dns/zones
+      - ./data/dns/:/dns/
     networks:
       core:
         ipv4_address: ${NET_DNS}
