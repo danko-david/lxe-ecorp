@@ -1,8 +1,14 @@
-# ECorp - AD and Gitlab based developer corporate infrastructure model
+# ECorp - Samba AD and GitLab-based Corporate Infrastructure Lab
+
+A reference architecture showcasing a GitLab-based corporate infrastructure for development-oriented companies. This project is a conceptual model designed to:
+
+1. Demonstrate the structural components of a modern developer environment, including AD/DC and integrated CI/CD.
+2. Provide a modular foundation for experimenting with personal projects in a controlled setting.
+3. Offer a sandbox for building and testing automated deployment workflows.
+
+The project is organized into submodules covering core services, corporate add-ons, and example application environments to serve as a starting point for infrastructure experimentation.
 
 _Important note_: This installer makes unusual modifications on the hosts system, deactivating docker network isolation, modify routes, so it is better to deploy in an LXC container or dind.
-
-This project is aims to showcase a infrastructure of a development oriented company, implement a foundation to operate personal projects and leave room to create experimenting environments for the actual projects inside gitlab in full CI/CD manner.
 
 ## Core infrastructure
 
