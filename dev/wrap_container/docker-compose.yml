@@ -21,7 +21,7 @@ services:
       - ../../:/source
     networks:
       ecorp_net:
-        ipv4_address: 192.168.166.2  # Itt adod meg a fix IP-t
+        ipv4_address: 192.168.166.2
 
 networks:
   ecorp_net:
