@@ -64,7 +64,7 @@ ad_users:
     password: password
     given_name: "Control Program"
     surname: Master
-    title: 
+    title: Automatic World Takeover
     roles:
       - developer
       - operator
