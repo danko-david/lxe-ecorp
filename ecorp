@@ -45,6 +45,11 @@ prepare()
 	spawn_default settings git-repos.yml
 }
 
+dc()
+{
+	docker compose -p ecorp "$@"
+}
+
 up()
 {
     _rh_try_ret_help 'Starts the infrastructure and follows until ready'
@@ -53,14 +58,14 @@ up()
     cd ${ROOT}
 
 	prepare
-    docker compose up -d --build
+    dc up -d --build
 	follow_provision
 }
 
 follow_provision()
 {
 	_rh_try_ret_help 'Follow current provisioning process output running in container until the end'
-	docker compose exec controller /ecorp/units/controller/code/ecorp follow_provision
+	dc exec controller /ecorp/units/controller/code/ecorp follow_provision
 }
 
 run_in_container()
@@ -69,16 +74,34 @@ run_in_container()
 	# TODO only raw git clone
 	cd $ROOT
 	cd dev/wrap_container
-	docker compose up -d
-	cat << EOF | docker compose exec -T ecorp bash
-set -ex
-docker ps # wait for docker ready
+	dc up -d
+	cat << EOF | dc exec -T ecorp bash
+	set -ex
+		# wait for docker ready
+		rem=30
+		while ! docker ps && [ \$rem '>' 0 ]
+		do
+			rem=\$(expr \$rem - 1)
+			sleep 1
+			echo "Waiting secounds remaining: "\$rem
+		done
+	docker ps
+	# disable raw protection prevents accessing containers routed style
+	# iptables -t raw -I PREROUTING 1 -j ACCEPT
+
 git config --global --add safe.directory /source/.git
 git clone /source ecorp
 cd ecorp
 ./ecorp up
 
+	echo ""
+	echo "To make this internal network segment available on host machine, add this route:"
+	echo "route add -net \$(source ./.env; echo \$NET_CIDR) gw \$(hostname -i)"
 EOF
+
+
+# cycle in container:
+# docker compose down -v ; git clean -fxd ; git pull origin master ; ./ecorp up ; docker logs -f ecorp-controller-1
 
 }
 

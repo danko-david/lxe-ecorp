@@ -19,12 +19,3 @@ services:
       - ./data/containerd:/var/lib/containerd
 
       - ../../:/source
-    networks:
-      ecorp_net:
-        ipv4_address: 192.168.166.2
-
-networks:
-  ecorp_net:
-    ipam:
-      config:
-        - subnet: 192.168.166.0/28
