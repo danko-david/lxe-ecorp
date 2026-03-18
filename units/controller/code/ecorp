@@ -15,6 +15,8 @@ _rh_try_ret_help()
 	fi
 }
 
+PROV_LOG_DIR=/ecorp/data/controller/provision/logs/
+
 ##### In container functions #####
 
 entrypoint()
@@ -22,9 +24,8 @@ entrypoint()
     _rh_try_ret_help 'Run entrypoint logic inside controller container'
 
 	# Make docker available for www-data.
-	# Align group 'docker' uid to host uid and add www-data to docker group
-	groupdel docker || true
-	groupadd -o -g $(ls -lah /var/run/docker.sock | awk '{print $4}') docker || true
+	chown root:docker /var/run/docker.sock
+	chmod 660 /var/run/docker.sock
 	usermod -aG docker www-data
 
 	# Place right at the start, in first start dns container is dying because of missing
@@ -50,6 +51,7 @@ entrypoint()
 
 	service ssh start
 
+	mkdir -p $PROV_LOG_DIR
 	controller_ansible_provision
 
     exec /bin/tail -f /dev/null
@@ -67,7 +69,62 @@ gen_ssh_master_key()
 controller_ansible_provision()
 {
 	cd /ecorp/units/controller/code/ansible
-	ansible-playbook -i hosts.yml provision.yml "$@"
+
+	log=${PROV_LOG_DIR}$(date +'%Y-%m-%d_%H-%M-%S')
+	ansible-playbook -i hosts.yml provision.yml "$@" | tee -a $log
+	ex=${PIPESTATUS[0]}
+	echo $ex > ${log}".exit"
+}
+
+chk_prov()
+{
+	[ 0 = $(ps aux | grep ansible-playbook | grep -v grep | wc -l) ]
+}
+
+follow_provision()
+{
+	_rh_try_ret_help 'Follows running provision'
+
+	if chk_prov
+	then
+		echo "Provisioning might not started yet, waiting a little bit"
+		rem=30
+		while chk_prov && [ $rem '>' 0 ]
+		do
+			rem=$(expr $rem - 1)
+			sleep 1
+			echo "Waiting secounds remaining: "$rem
+		done
+	fi
+
+	if chk_prov
+	then
+		echo "No provision running. exiting"
+		exit 0
+	fi
+
+
+	last_file=$(ls -t ${PROV_LOG_DIR} | head -1)
+	
+	if [[ "$last_file" =~ '\.exit+$' ]]
+	then
+		ex=$(cat last_file)
+		echo "Last provision exited: "$ex
+		exit $ex
+	fi
+
+	# still running, following
+	tail -f ${PROV_LOG_DIR}${last_file} &
+
+	exit_file=${PROV_LOG_DIR}${last_file}".exit"
+	
+	while ! [ -e $exit_file ]
+	do
+		sleep 1
+	done
+	ex=$(cat $exit_file)
+	echo "Provisioning exited: "$ex
+	exit $ex
 }
 
 regenerate_dns_zone_docker()

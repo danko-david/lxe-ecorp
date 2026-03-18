@@ -47,13 +47,20 @@ prepare()
 
 up()
 {
-    _rh_try_ret_help 'Starts the infrastructure'
+    _rh_try_ret_help 'Starts the infrastructure and follows until ready'
     set -e
     
     cd ${ROOT}
 
 	prepare
     docker compose up -d --build
+	follow_provision
+}
+
+follow_provision()
+{
+	_rh_try_ret_help 'Follow current provisioning process output running in container until the end'
+	docker compose exec controller /ecorp/units/controller/code/ecorp follow_provision
 }
 
 run_in_container()
