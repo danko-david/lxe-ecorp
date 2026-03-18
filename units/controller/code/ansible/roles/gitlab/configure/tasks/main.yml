@@ -1,3 +1,9 @@
+- name: Wait gitlab config initialization
+  ansible.builtin.wait_for:
+    path: /ecorp/data/gitlab/config/gitlab.rb
+    state: present
+    timeout: 300
+
 - name: Configure GitLab
   blockinfile:
     marker: "# {mark} ANSIBLE MANAGED BLOCK - custom configuration"
