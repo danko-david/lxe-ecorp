@@ -68,31 +68,6 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./data/gitlab-runner/conf:/etc/gitlab-runner
 
-  www:
-    <<: *def
-    build:
-      context: units/www
-    labels:
-      # extra dns record to this container
-      dns_names: "collab chat ticket *.all"
-      # extra record used to generate virtual server
-      ingress: "collab|mattermost:8065"
-
-
-  mattermost:
-    <<: *def
-    image: mattermost/mattermost-preview
-    volumes:
-      - ./data/mattermost/data:/mm/mattermost-data
-
-#//- dns _for_ dns server for name resolution
-#- samba _for_ AD functionalities
-#- samba _for_ fileshare
-#//- gitlab _for_ code management and CI/CD
-#- redmine _for_ ticketing 
-#- nexus _for_ package management and external package mirroring
-#- nextcloud/mattermost _for_ teams and sharepoint alternative
-
 volumes:
   # I dont like this, but ACLs does not works with bind
   dc:
