@@ -2,16 +2,13 @@ FROM debian:latest
 
 # install basic utils
     RUN apt-get update
-    RUN apt-get install -y nmap bwm-ng htop links2 screen apt-file strace git nano\
-    mc hexedit lsof sudo socat nethogs iotop zip iftop sshfs wget tree\
-    rsync mailutils dnsutils tmux curl netcat-openbsd net-tools jq iputils-ping\
-    ca-certificates
+    RUN apt-get install -y nmap git nano sudo socat wget \
+    rsync dnsutils tmux curl netcat-openbsd net-tools jq iputils-ping \
+    ca-certificates \
+    ansible sshpass \
+    apache2 python3 python3-pip cron ssh \
+    pandoc
 
-# install operation tools
-    RUN apt-get install -y ansible sshpass
-
-# install services
-    RUN apt-get install -y apache2 python3 python3-pip cron ssh
     RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
 # install docker (source: https://docs.docker.com/engine/install/debian/#install-using-the-repository)
@@ -23,12 +20,10 @@ FROM debian:latest
     RUN echo \
     "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
-    sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+    tee /etc/apt/sources.list.d/docker.list > /dev/null
 
     RUN apt-get update
     RUN apt-get install -y docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
-RUN apt-get install -y pandoc
 
 RUN echo "root:password" | chpasswd 
 
