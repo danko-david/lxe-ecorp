@@ -15,6 +15,17 @@ _rh_try_ret_help()
 	fi
 }
 
+spawn_default()
+{
+	cd $ROOT
+	cd $1
+	if ! [ -e $2 ]
+	then
+		cp $2.default $2
+	fi
+	cd $ROOT
+}
+
 prepare()
 {
 	_rh_try_ret_help 'Do the necessary preparation steps before launching: spawning default config files, creating directories'
@@ -28,6 +39,10 @@ prepare()
 	then
 		iptables -t filter -I FORWARD 1 -j ACCEPT
 	fi
+
+	spawn_default . .env
+	spawn_default settings ad-users.yml
+	spawn_default settings git-repos.yml
 }
 
 up()
