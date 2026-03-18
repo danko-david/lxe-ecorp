@@ -41,6 +41,24 @@ up()
     docker compose up -d --build
 }
 
+run_in_container()
+{
+	_rh_try_ret_help 'Launch the ecorp infrastructure in a container'
+	# TODO only raw git clone
+	cd $ROOT
+	cd dev/wrap_container
+	docker compose up -d
+	cat << EOF | docker compose exec -T ecorp bash
+set -ex
+docker ps # wait for docker ready
+git config --global --add safe.directory /source/.git
+git clone /source ecorp
+cd ecorp
+./ecorp up
+
+EOF
+
+}
 
 ############################ RH built-in functions #############################
 

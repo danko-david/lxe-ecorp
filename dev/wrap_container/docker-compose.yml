@@ -1,0 +1,30 @@
+services:
+  ecorp:
+    restart: unless-stopped
+    build: .
+    cap_add:
+      - ALL
+    security_opt:
+      - seccomp:unconfined
+      - apparmor:unconfined
+      - systempaths=unconfined
+    tmpfs:
+      - /tmp
+      - /run
+    volumes:
+      # Required for systemd
+      - /sys/fs/cgroup:/sys/fs/cgroup
+      # Required for docker (Overlay can't be mounted on overlay)
+      - ./data/docker:/var/lib/docker
+      - ./data/containerd:/var/lib/containerd
+
+      - ../../:/source
+    networks:
+      ecorp_net:
+        ipv4_address: 192.168.166.2  # Itt adod meg a fix IP-t
+
+networks:
+  ecorp_net:
+    ipam:
+      config:
+        - subnet: 192.168.166.0/28
