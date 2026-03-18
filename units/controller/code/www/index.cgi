@@ -163,6 +163,24 @@ EOF
 echo '</table>'
 }
 
+dbg()
+{
+	echo
+	echo "> $@"
+	$@
+}
+
+_page_dbg_docker_ps()
+{
+	echo "<pre>"
+	set -a
+	source /ecorp/.env
+	dbg export
+	dbg docker ps
+	dbg exec_addc samba-tool user list
+	echo "</pre>"
+}
+
 #### Main - controller routing
 declare -A _GET
 
