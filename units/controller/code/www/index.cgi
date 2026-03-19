@@ -89,7 +89,7 @@ EOF
 		docker inspect --format $'{{ .Name }}\t{{ index .Config.Labels "com.docker.compose.service" }}\t{{ index .Config.Labels "dns_names" }} \t{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}} \t{{ index .Config.Labels "network_route" }}' $m \
 		| while IFS=$'\t' read -a data
 		do
-			tr "${data[0]/\//}" "${data[1]}.${DNS_CORE_ZONE_NAME}" "${data[2]}" "${data[3]}" "${data[4]}"
+			tr "${data[0]/\//}" "${data[1]}.${ECORP_DNS_CORE_ZONE_NAME}" "${data[2]}" "${data[3]}" "${data[4]}"
 		done
 	done
 	echo '</table>'
@@ -143,7 +143,7 @@ EOF
 _page_ad_users()
 {
 	cat << EOF
-	<h1>List of users in AD Domain controller: dc.${DNS_CORE_ZONE_NAME}</h1>
+	<h1>List of users in AD Domain controller: dc.${ECORP_DNS_CORE_ZONE_NAME}</h1>
 	<span>Users imported from "<b>./settings/ad-users.yml</b>". If you just added new users, re-run ECorp provisioning in <a href="/?page=actions">Actions</a> menu.</span>
 	<table>
 EOF

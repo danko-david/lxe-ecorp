@@ -14,7 +14,7 @@
     {{ ad_exec }} samba-tool user create '{{ user.user }}' '{{ user.password }}' \
     --given-name='{{ user.given_name }}' \
     --surname='{{ user.surname }}' \
-    --mail-address='{{ user.email | default(user.user+'@'+DNS_CORE_ZONE_NAME) }}' \
+    --mail-address='{{ user.email | default(user.user+'@'+ECORP_DNS_CORE_ZONE_NAME) }}' \
     --job-title='{{ user.title | default('') }}' \
     --initials='{{ user.initial | default('') }}' \
   when: not user_exists

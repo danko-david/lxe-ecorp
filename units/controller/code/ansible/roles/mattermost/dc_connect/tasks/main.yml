@@ -14,7 +14,7 @@
         value: true
       - op: replace
         path: "/LdapSettings/LdapServer"
-        value: 'dc.{{ DNS_CORE_ZONE_NAME }}'
+        value: 'dc.{{ ECORP_DNS_CORE_ZONE_NAME }}'
       - op: replace
         path: "/LdapSettings/LdapPort"
         value: "636"

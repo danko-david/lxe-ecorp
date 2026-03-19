@@ -42,7 +42,7 @@ services:
     build:
       context: units/controller
     environment:
-      - DNS_CORE_ZONE_NAME
+      - ECORP_DNS_CORE_ZONE_NAME
       - DC_REALM
       - DC_DOMAIN
       - DC_ADMIN_PASS

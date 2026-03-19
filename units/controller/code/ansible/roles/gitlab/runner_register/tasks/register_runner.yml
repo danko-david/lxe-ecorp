@@ -2,7 +2,7 @@
   ansible.builtin.shell: |
     {{ runner.target | default(runner_default_target) }} gitlab-runner register \
       --non-interactive \
-      --url "http://gitlab.{{ DNS_CORE_ZONE_NAME }}" \
+      --url "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}" \
       --registration-token "{{ gitlab_runner_registration_token }}" \
       --executor "{{ runner.type | default('docker') }}" \
       --description "{{ runner.name }}" \

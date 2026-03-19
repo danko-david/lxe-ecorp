@@ -8,7 +8,7 @@
       gitlab_rails['ldap_servers'] = {
         'main' => {
           'label' => 'LDAP',
-          'host' => 'dc.{{ lookup("env", "DNS_CORE_ZONE_NAME") }}',
+          'host' => 'dc.{{ lookup("env", "ECORP_DNS_CORE_ZONE_NAME") }}',
           'port' => 636,
           'uid' => 'sAMAccountName',
           'bind_dn' => 'Administrator@{{ lookup("env", "DC_DOMAIN") }}',

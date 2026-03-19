@@ -2,13 +2,13 @@
 - name: Wait for GitLab to be available on port 80
   ansible.builtin.wait_for:
     port: 80
-    host: "gitlab.{{ DNS_CORE_ZONE_NAME }}"
+    host: "gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
     timeout: 300
   delegate_to: localhost
 
 - name: Wait for GitLab /users/sign_in page to respond (initial setup check)
   ansible.builtin.uri:
-    url: "http://gitlab.{{ DNS_CORE_ZONE_NAME }}/users/sign_in"
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/users/sign_in"
     status_code: 200
     validate_certs: false
   register: _result
