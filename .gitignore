@@ -3,3 +3,4 @@ tmp
 *.gitignore.*
 gitignore.*
 .env
+settings/**.yml
