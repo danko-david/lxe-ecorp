@@ -2,7 +2,7 @@ FROM debian:latest
 
 # install basic utils
     RUN apt-get update
-    RUN apt-get install -y nmap git nano sudo socat wget \
+    RUN apt-get install -y tini nmap git nano sudo socat wget \
     rsync dnsutils tmux curl netcat-openbsd net-tools jq iputils-ping \
     ca-certificates \
     ansible sshpass \
@@ -27,4 +27,4 @@ FROM debian:latest
 
 RUN echo "root:password" | chpasswd 
 
-ENTRYPOINT ["/ecorp/units/controller/code/ecorp", "entrypoint"]
+ENTRYPOINT ["/usr/bin/tini", "/ecorp/units/controller/code/ecorp", "--", "entrypoint"]

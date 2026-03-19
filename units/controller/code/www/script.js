@@ -49,4 +49,37 @@ function closePopup() {
     document.getElementById('popupOverlay').style.display = 'none';
 }
 
-console.log("JS loaded")
+async function streamTo(url, target) {
+    try {
+        const response = await fetch(url);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { value, done } = await reader.read();
+            if (done)
+				break;
+			
+			const chunk = decoder.decode(value, { stream: true });
+            target.textContent += chunk;
+            window.scrollTo(0, document.body.scrollHeight);
+        }
+    } catch (err) {
+        console.error("Error occurred while streaming:", err);
+    }
+}
+
+const runHooks = () =>{
+		while (window.onReadyHooks.length > 0) window.onReadyHooks.shift()()
+	};
+	
+if (document.readyState === 'interactive' || document.readyState === 'complete') {
+	runHooks();
+} else {
+	document.addEventListener('readystatechange', () => {
+		if (document.readyState === 'interactive') {
+			runHooks();
+		}
+	});
+};
+console.log("JS loaded");

@@ -2,6 +2,8 @@
 
 source /ecorp/.env
 
+PROV_LOG_DIR=/ecorp/data/controller/provision/logs/
+
 page()
 {
 cat << EOF
@@ -14,6 +16,7 @@ Content-type: text/html
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🐧ECorp Management Web Interface</title>
     <link rel="stylesheet" href="/style.css">
+	<script type="text/javascript">window.onReadyHooks = [];</script>
 </head>
 <body>
     <header>
@@ -25,6 +28,7 @@ Content-type: text/html
 		<a href="/?page=config_vars">Configuration variables</a>
 		<a href="/?page=infra">Infra</a>
 		<a href="/?page=ad_users">AD Users</a>
+		<a href="/?page=actions">Actions</a>
     </nav>
     
     <content>
@@ -45,11 +49,6 @@ Content-type: text/html
 </html>
 EOF
 exit 0
-}
-
-page_refresh_cycle()
-{
-	page "<div id="refresh_target"></div><script type="text/javascript">loopRun(900, ajaxResultSetTo('$1', 'refresh_target'));</script>"
 }
 
 ajax()
@@ -145,7 +144,7 @@ _page_ad_users()
 {
 	cat << EOF
 	<h1>List of users in AD Domain controller: dc.${DNS_CORE_ZONE_NAME}</h1>
-	<span>Users imported from "<b>./settings/ad-users.yml</b>". If you just added new users, re-run ECorp provisioning in <a href="/?page=playbooks">Playbooks</a> menu.</span>
+	<span>Users imported from "<b>./settings/ad-users.yml</b>". If you just added new users, re-run ECorp provisioning in <a href="/?page=actions">Actions</a> menu.</span>
 	<table>
 EOF
 	X=th tr "Username" "Full name" "Email" "Role title" "All AD records"
@@ -163,6 +162,105 @@ EOF
 echo '</table>'
 }
 
+_page_actions()
+{
+cat << EOF
+	<h1>Actions</h1>
+	<table>
+		$(X=th tr "Launch action")
+		$(tr "<a href="/?raw=start_provision">Start provision</a>")
+
+	</table>
+	<table>
+		$(X=th tr "Provision logs")
+EOF
+	
+	for f in $(ls -t $PROV_LOG_DIR)
+	do
+		tr '<a href="/?page=follow_log&file='$f'">'$f'</a>'
+	done
+
+echo '</table>'
+}
+
+chk_prov()
+{
+	[ 0 = $(ps aux | grep ansible-playbook | grep -v grep | wc -l) ]
+}
+
+_raw_start_provision()
+{
+	if ! chk_prov
+	then
+		last_file=$(ls -t ${PROV_LOG_DIR} | head -1)
+		page 'Provision already running, follow here: <a href="/?page=follow_log&file='$last_file'">'$last_file'</a>'
+		exit 0
+	fi
+
+	sudo /ecorp/units/controller/code/ecorp controller_ansible_provision  > /dev/null &
+
+	rem=10
+	while chk_prov && [ $rem '>' 0 ]
+	do
+		rem=$(expr $rem - 1)
+		sleep 1
+	done
+
+	last_file=$(ls -t ${PROV_LOG_DIR} | head -1)
+
+	echo "Content-Type: text/plain; charset=UTF-8"
+	echo "Location: http://"$HTTP_HOST"/?page=follow_log&file="$last_file
+	echo ""
+}
+
+_page_follow_log()
+{
+cat << EOF
+	<h1>Provisioning log output</h1>
+	<table>
+EOF
+	file=${_GET['file']}
+
+	X=th tr "Following log output of: "$file
+cat << EOF
+	<tr>
+		<td>
+			<pre id="log_output_target"></pre>
+			<script type="text/javascript">
+				window.onReadyHooks.push(
+					()=>streamTo('/?raw=follow_log&file=$file', document.getElementById('log_output_target'))
+				)
+			</script>
+		</td>
+	</tr>
+	</table>
+EOF
+}
+
+_raw_follow_log()
+{
+	echo "Content-Type: text/event-stream"
+	echo "Cache-Control: no-cache"
+	echo "X-Content-Type-Options: nosniff"
+	echo ""
+
+	file=${_GET['file']}
+	
+	tail -n 9999999 -f ${PROV_LOG_DIR}${file} &
+	TPID=$?
+
+	exit_file=${PROV_LOG_DIR}${file}".exit"
+	
+	while ! [ -e $exit_file ]
+	do
+		sleep 1
+	done
+	ex=$(cat $exit_file)
+	echo "Provisioning exited: "$ex
+	kill $TPID
+	exit $ex
+}
+
 dbg()
 {
 	echo
@@ -170,7 +268,7 @@ dbg()
 	$@
 }
 
-_page_dbg_docker_ps()
+_page_dbg()
 {
 	echo "<pre>"
 	set -a
@@ -198,7 +296,10 @@ manage_ent()
 if [ ! -z "${_GET[$1]}" ]
 then
 	call_page="_$1_${_GET[$1]}"
-	if [[ $(type -t $call_page) == function ]]
+	if [ $1 = 'raw' ]
+	then
+		$call_page
+	elif [[ $(type -t $call_page) == function ]]
 	then
 		$1 "$($call_page)"
 	else
@@ -224,6 +325,7 @@ fi
 # manage entities
 manage_ent page
 manage_ent ajax
+manage_ent raw
 
 # main page
 page "$(pandoc -t html /ecorp/README.md)"

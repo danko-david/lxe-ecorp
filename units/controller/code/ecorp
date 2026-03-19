@@ -24,9 +24,12 @@ entrypoint()
     _rh_try_ret_help 'Run entrypoint logic inside controller container'
 
 	# Make docker available for www-data.
-	chown root:docker /var/run/docker.sock
+	chown root:www-data /var/run/docker.sock
 	chmod 660 /var/run/docker.sock
-	usermod -aG docker www-data
+	usermod -aG sudo www-data
+
+	echo '%sudo         ALL = (ALL) NOPASSWD: ALL' >  /etc/sudoers.d/sudoers-nopwd
+	chmod 440 /etc/sudoers.d/sudoers-nopwd
 
 	# Place right at the start, in first start dns container is dying because of missing
 	# Corefile configuration, so generate as fast as possible.
@@ -70,6 +73,12 @@ controller_ansible_provision()
 {
 	cd /ecorp/units/controller/code/ansible
 
+	if ! chk_prov
+	then
+		echo "Provision already running"
+		exit 1
+	fi
+
 	log=${PROV_LOG_DIR}$(date +'%Y-%m-%d_%H-%M-%S')
 	ansible-playbook -i hosts.yml provision.yml "$@" | tee -a $log
 	ex=${PIPESTATUS[0]}
@@ -106,15 +115,8 @@ follow_provision()
 
 	last_file=$(ls -t ${PROV_LOG_DIR} | head -1)
 	
-	if [[ "$last_file" =~ '\.exit+$' ]]
-	then
-		ex=$(cat last_file)
-		echo "Last provision exited: "$ex
-		exit $ex
-	fi
-
-	# still running, following
-	tail -f ${PROV_LOG_DIR}${last_file} &
+	tail -n 9999999 -f ${PROV_LOG_DIR}${last_file} &
+	TPID=$?
 
 	exit_file=${PROV_LOG_DIR}${last_file}".exit"
 	
@@ -124,6 +126,7 @@ follow_provision()
 	done
 	ex=$(cat $exit_file)
 	echo "Provisioning exited: "$ex
+	kill $TPID
 	exit $ex
 }
 
@@ -264,6 +267,8 @@ www_conf()
 		DirectoryIndex index.cgi index.html
 		AddHandler cgi-script .cgi
 		AllowOverride All
+		SetEnv no-gzip 1
+		SetEnv NS_SYNC_FLUSH 1
 EOF
 
 		if [ ! -z $HOME_WWW_USER ] && [ ! -z $HOME_WWW_PASSWORD ]
