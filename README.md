@@ -21,5 +21,7 @@ The infrastructure wrapped around 3 core technology:
 ## TODO doc
 - explain .env config, key points
 - designed to be routed project
-- useful if you delegate ecorp.intra.net to the host machine in your home network
+- useful if you delegate/forward ecorp.intra.net to the host machine in your home network
 - `core` tag in CI/CD
+- ECORP_ global vars
+- 
