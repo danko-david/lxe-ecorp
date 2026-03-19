@@ -18,10 +18,16 @@ _rh_try_ret_help()
 spawn_default()
 {
 	cd $ROOT
-	cd $1
-	if ! [ -e $2 ]
+	cd $2
+	if ! [ -e $3 ]
 	then
-		cp $2.default $2
+		if [ $1 = 'plain' ]
+		then
+			cp $3'.default' $3
+		elif [ $1 = 'eval' ]
+		then
+			bash <(echo 'cat << EOF' ; cat $3'.default' ; echo 'EOF') > $3
+		fi
 	fi
 	cd $ROOT
 }
@@ -32,7 +38,7 @@ prepare()
     
 	cd ${ROOT}
 
-    mkdir -p data/dns/zones/
+    mkdir -p data/dns/zones/ data/storage
 
 	# disable network segmentation in docker
 	if ! iptables-save | grep -q 'A FORWARD -j ACCEPT'
@@ -40,9 +46,9 @@ prepare()
 		iptables -t filter -I FORWARD 1 -j ACCEPT
 	fi
 
-	spawn_default . .env
-	spawn_default settings ad-users.yml
-	spawn_default settings git-repos.yml
+	spawn_default eval . .env
+	spawn_default plain settings ad-users.yml
+	spawn_default plain settings git-repos.yml
 }
 
 dc()

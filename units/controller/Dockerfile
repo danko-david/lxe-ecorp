@@ -25,6 +25,8 @@ FROM debian:latest
     RUN apt-get update
     RUN apt-get install -y docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
+RUN pip install --break-system-packages python-gitlab
+
 RUN echo "root:password" | chpasswd 
 
 ENTRYPOINT ["/usr/bin/tini", "/ecorp/units/controller/code/ecorp", "--", "entrypoint"]

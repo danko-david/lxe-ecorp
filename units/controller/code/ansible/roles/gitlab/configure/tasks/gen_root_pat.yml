@@ -1,0 +1,12 @@
+- name: Deploy root Personal Access Token generator script
+  template:
+    src: root_access_token.rb
+    dest: /ecorp/data/gitlab/config/root_access_token.rb
+  
+- name: Generate access token
+  command: docker exec -t ecorp-gitlab-1 gitlab-rails runner /etc/gitlab/root_access_token.rb 
+ 
+- name: Update token maker file
+  ansible.builtin.file:
+    path: /ecorp/data/controller/provision/last_root_pat
+    state: touch

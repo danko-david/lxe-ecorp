@@ -80,6 +80,8 @@ controller_ansible_provision()
 	fi
 
 	log=${PROV_LOG_DIR}$(date +'%Y-%m-%d_%H-%M-%S')
+	set -a
+	source /ecorp/.env
 	ansible-playbook -i hosts.yml provision.yml "$@" | tee -a $log
 	ex=${PIPESTATUS[0]}
 	echo $ex > ${log}".exit"
