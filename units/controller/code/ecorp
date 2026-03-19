@@ -15,6 +15,7 @@ _rh_try_ret_help()
 	fi
 }
 
+
 PROV_LOG_DIR=/ecorp/data/controller/provision/logs/
 
 ##### In container functions #####
@@ -23,9 +24,11 @@ entrypoint()
 {
     _rh_try_ret_help 'Run entrypoint logic inside controller container'
 
-	# Make docker available for www-data.
-	chown root:www-data /var/run/docker.sock
-	chmod 660 /var/run/docker.sock
+	# Make docker available for www-data. (don't chmod docker.sock, it
+	# also modifies the socket's permission on the host)
+	groupdel docker || true
+	groupadd -o -g $(stat /var/run/docker.sock | grep -oP '(?<=Gid: \()[^/]+') docker || true
+	usermod -aG docker www-data
 	usermod -aG sudo www-data
 
 	echo '%sudo         ALL = (ALL) NOPASSWD: ALL' >  /etc/sudoers.d/sudoers-nopwd
@@ -288,24 +291,6 @@ EOF
 	echo "</Directory>"
 echo "</VirtualHost>"
 }
-
-dc_list_users()
-{
-	_rh_try_ret_help 'List users in Domain Controller inside controller container'
-	source /ecorp/.env
-	
-	export LDAP_SERVER=$NET_DC
-	export LDAP_PORT=636
-	export LDAP_SSL=true
-
-	export LDAP_BIND_DN="Administrator@${DC_DOMAIN}" # Example: 'cn=admin,dc=yourdomain,dc=com'
-	export LDAP_BIND_PASSWORD=$DC_ADMIN_PASS
-	
-	export LDAP_SEARCH_BASE="dc=$DC_REALM" # Example: 'dc=yourdomain,dc=com'
-
-	exec /ecorp/dev/ldap_list_users.py
-}
-
 
 ############################ RH built-in functions #############################
 
