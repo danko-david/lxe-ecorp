@@ -5,4 +5,4 @@
     - dc/import_roles_users
     - gitlab/dc_connect
     - gitlab/runner_register
-    - gitlab/git_import
+    - step/main

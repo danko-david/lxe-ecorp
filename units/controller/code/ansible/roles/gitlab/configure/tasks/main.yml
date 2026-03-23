@@ -48,3 +48,15 @@
         protected: false
   loop: "{{ ecorp_vars }}"
   when: ecorp_vars | length > 0
+
+- name: Init git import enviroment
+  shell: |
+    git config --global credential.helper store
+    git credential approve << EOF
+    protocol=http
+    host=gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}
+    username=root
+    password={{ lookup('env', 'GITLAB_ROOT_PASSWORD') }}
+    EOF
+
+    git config --global --add safe.directory /ecorp

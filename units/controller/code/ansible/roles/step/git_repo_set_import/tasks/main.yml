@@ -1,0 +1,6 @@
+- name: Importing repo set
+  include_role:
+    name: "step/git_repo_import"
+  loop_control:
+    loop_var: repo
+  loop: "{{ repos }}"
