@@ -4,7 +4,6 @@
   register: runner_registered
   ignore_errors: true
   changed_when: false
-  delegate_to: localhost
   when: is_runners_registered
 
 - name: Eval is_runners_registered

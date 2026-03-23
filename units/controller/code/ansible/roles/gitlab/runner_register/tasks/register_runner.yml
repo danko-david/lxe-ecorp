@@ -12,4 +12,3 @@
       --locked="false" \
       --access-level="not_protected" \
       {{ runner.opts | default('') }}
-  delegate_to: localhost
