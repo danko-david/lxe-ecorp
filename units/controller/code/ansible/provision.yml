@@ -4,6 +4,5 @@
     - gitlab/configure
     - dc/import_roles_users
     - gitlab/dc_connect
-    #- mattermost/dc_connect
     - gitlab/runner_register
-    #- util/git_import
+    - gitlab/git_import

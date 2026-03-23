@@ -1,0 +1,44 @@
+
+- name: Ensure group directory exists
+  ansible.builtin.file:
+    path: "/ecorp/data/controller/last_imports/git_import/{{ repo.path }}"
+    state: directory
+    mode: '0755'
+
+- name: Ensure GitLab group {{ repo.path }} exists
+  community.general.gitlab_group:
+    api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
+    api_token: "SUPER_SECRET_ROOT_TOKEN"
+    name: "{{ repo.path }}"
+    path: "{{ repo.path }}"
+    state: present
+    visibility: public
+    validate_certs: false
+
+- name: Clone or pull latest commits from {{ repo.url }}
+  shell: |
+    cd '/ecorp/data/controller/last_imports/git_import/{{ repo.path }}'
+    if [ -d '{{ repo.repo }}' ]
+    then
+      cd '{{ repo.repo }}'
+      git fetch origin
+    else
+      git clone '{{ repo.url }}' '{{ repo.repo }}'
+    fi
+
+- name: Push commits to gitlab http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ repo.path }}/{{ repo.repo }}
+  shell: |
+    export GIT_TERMINAL_PROMPT=0
+    cd '/ecorp/data/controller/last_imports/git_import/{{ repo.path }}/{{ repo.repo }}'
+    git remote add gitlab http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ repo.path }}/{{ repo.repo }} || true
+    git push gitlab --all
+
+- name: Set GitLab project {{ repo.path }}/{{ repo.repo }} visibility to public
+  community.general.gitlab_project:
+    api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
+    api_token: "SUPER_SECRET_ROOT_TOKEN"
+    name: "{{ repo.repo }}"
+    group: "{{ repo.path }}"
+    visibility: public
+    state: present
+    validate_certs: false

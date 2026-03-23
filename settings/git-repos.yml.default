@@ -1,7 +1,12 @@
 repos:
   - url: https://github.com/danko-david/lxe-ecorp
     path: eu.linuxengineering
-	repo: ecorp
+    repo: ecorp
+
   - url: https://github.com/danko-david/lxe-module-project-server
     path: eu.linuxengineering
-	repo: project-server
+    repo: project-server
+
+  - url: https://github.com/danko-david/lxe-docker-compose-expo
+    path: eu.linuxengineering
+    repo: docker-compose-expo
