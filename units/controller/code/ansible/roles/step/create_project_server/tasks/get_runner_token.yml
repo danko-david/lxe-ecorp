@@ -37,6 +37,10 @@
   register: runner_details
   when: runner_details.runner is defined and runner_details.runner.status is defined and runner_details.runner.status == 'never_contacted'
 
+- name: Fail if no registration token available
+  fail: No registration token available
+  when: runner_details.runner.token is not defined
+
 - name: Turn off shared runners on this project
   community.general.gitlab_project:
     api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
