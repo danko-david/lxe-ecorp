@@ -141,8 +141,6 @@ regenerate_dns_zone_docker()
 
 	# create docker dir if not exists
 	mkdir -p /ecorp/data/dns/zones/dynamic/docker/
-	# delete all old dynamic files in dir
-	rm -rf /ecorp/data/dns/zones/dynamic/docker/* || true
 
 	{
 		cat << EOF 
@@ -183,7 +181,9 @@ EOF
 		fi
 	done <<< "$DOCKER_DATA"
 
-	} > /ecorp/data/dns/zones/dynamic/docker/${ECORP_DNS_CORE_ZONE_NAME}
+	} > /tmp/${ECORP_DNS_CORE_ZONE_NAME}
+
+	mv /tmp/${ECORP_DNS_CORE_ZONE_NAME} /ecorp/data/dns/zones/dynamic/docker/${ECORP_DNS_CORE_ZONE_NAME}
 
 	{
 	while read -r -a REC
@@ -240,8 +240,9 @@ cat << EOF
     reload 3s 1s
 }
 EOF
-	} > /ecorp/data/dns/Corefile
+	} > /tmp/Corefile
 
+	mv /tmp/Corefile /ecorp/data/dns/Corefile
 }
 
 
