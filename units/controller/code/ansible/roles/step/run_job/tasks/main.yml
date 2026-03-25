@@ -1,0 +1,63 @@
+- name: "Launch gitlab pipeline on {{ job.project }}"
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/pipeline"
+    method: POST
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+    body_format: json
+    body: >-
+      {%- set vars_list = [] -%}
+      {%- for key, value in (job.vars | default({}) ).items() -%}
+        {%- set _ = vars_list.append({'key': key, 'value': value}) -%}
+      {%- endfor -%}
+      {{- { 'ref': job.ref | default('master'), 'variables': vars_list } | to_json -}}
+    status_code: 201
+  register: pipeline_trigger
+
+- name: Waiting on pipeline http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ job.project }}/pipelines/{{ pipeline_trigger.json.id }} to be ready"
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/pipelines/{{ pipeline_trigger.json.id }}"
+    method: GET
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+  register: pipeline_status
+  until: pipeline_status.json.status in ['success', 'skipped']
+  retries: 20
+  delay: 5
+
+- name: Finding job {{ job.job | default('') }}
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/pipelines/{{ pipeline_trigger.json.id }}/jobs?per_page=100"
+    method: GET
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+  register: pipeline_jobs
+  until: "pipeline_jobs.json | selectattr('name', 'equalto', job.job) | list | length > 0"
+  retries: 10
+  delay: 2
+
+- name: Starting job
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/jobs/{{ (pipeline_jobs.json | selectattr('name', 'equalto', job.job) | first).id }}/play"
+    method: POST
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+    status_code: [200, 201]
+  register: job_play_result
+  when: "(pipeline_jobs.json | selectattr('name', 'equalto', job.job) | first).status == 'manual'"
+
+- name: Waiting for job ({{ job.job }}) to done
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/jobs/{{ (pipeline_jobs.json | selectattr('name', 'equalto', job.job) | first).id }}"
+    method: GET
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+  register: specific_job_status
+  until: specific_job_status.json.status in ['success', 'failed', 'canceled', 'skipped']
+  retries: 300
+  delay: 5
+
+- name: Check if job was successfull
+  ansible.builtin.fail:
+    msg: "Job {{ job.job }} failed. state: {{ specific_job_status.json.status }}"
+  when: specific_job_status.json.status != 'success'

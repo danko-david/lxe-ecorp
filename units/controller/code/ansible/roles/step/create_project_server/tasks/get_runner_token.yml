@@ -1,0 +1,46 @@
+- name: Get GitLab project details
+  ansible.builtin.uri:
+    url: http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ project_server.link.project | urlencode | regex_replace('/', '%2F') }}
+    method: GET
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+  register: project_info
+  when: project_server.link is defined
+
+- name: Create a Project Runner and get Registration Token
+  community.general.gitlab_runner:
+    api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
+    api_token: "SUPER_SECRET_ROOT_TOKEN"
+    project: "{{ project_info.json.id }}"
+    tag_list: "{{ project_server.link.tags | default([]) }}"
+    description: "Runner for project-server {{ project_server.name }}"
+    state: present
+  register: runner_details
+
+- name: If runner exists but never contacted, recreate and get token
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/runners/{{ runner_details.runner.id }}"
+    method: DELETE
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+    status_code: [204, 404]
+  when: runner_details.runner is defined and runner_details.runner.status is defined and runner_details.runner.status == 'never_contacted'
+
+- name: Create a Project Runner and get Registration Token
+  community.general.gitlab_runner:
+    api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
+    api_token: "SUPER_SECRET_ROOT_TOKEN"
+    project: "{{ project_info.json.id }}"
+    tag_list: "{{ project_server.link.tags | default([]) }}"
+    description: "Runner for project-server {{ project_server.name }}"
+    state: present
+  register: runner_details
+  when: runner_details.runner is defined and runner_details.runner.status is defined and runner_details.runner.status == 'never_contacted'
+
+- name: Turn off shared runners on this project
+  community.general.gitlab_project:
+    api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
+    api_token: "SUPER_SECRET_ROOT_TOKEN"
+    name: "{{ (project_server.link.project | split('/'))[1] }}"
+    group: "{{ (project_server.link.project | split('/'))[0] }}"
+    shared_runners_enabled: false

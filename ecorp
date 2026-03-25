@@ -46,9 +46,14 @@ prepare()
 		iptables -t filter -I FORWARD 1 -j ACCEPT
 	fi
 
+	if ! iptables-save | grep -q 'A PREROUTING -j ACCEPT'
+	then
+		iptables -t raw -I PREROUTING -j ACCEPT
+	fi
+
 	spawn_default eval . .env
 	spawn_default plain settings ad-users.yml
-	spawn_default plain settings git-repos.yml
+	spawn_default plain settings steps.yml
 }
 
 dc()

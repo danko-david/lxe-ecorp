@@ -31,7 +31,7 @@
   loop: "{{ steps }}"
   when: steps_changed
   
-- name: Copy current ad-users.yml to last_imports if it was imported
+- name: Copy current steps.yml to last_steps if it was successfull
   ansible.builtin.copy:
     src: /ecorp/settings/steps.yml
     dest: /ecorp/data/controller/last_steps.yml

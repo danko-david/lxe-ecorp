@@ -1,10 +1,4 @@
 
-- name: Ensure group directory exists
-  ansible.builtin.file:
-    path: "/ecorp/data/controller/last_imports/git_import/{{ repo.path }}"
-    state: directory
-    mode: '0755'
-
 - name: Ensure GitLab group {{ repo.path }} exists
   community.general.gitlab_group:
     api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
@@ -17,21 +11,23 @@
 
 - name: Clone or pull latest commits from {{ repo.url }}
   shell: |
+    set -ex
+    mkdir -p '/ecorp/data/controller/last_imports/git_import/{{ repo.path }}'
     cd '/ecorp/data/controller/last_imports/git_import/{{ repo.path }}'
     if [ -d '{{ repo.repo }}' ]
     then
       cd '{{ repo.repo }}'
-      git fetch origin
+      git fetch --all --prune
     else
-      git clone '{{ repo.url }}' '{{ repo.repo }}'
+      git clone --mirror '{{ repo.url }}' '{{ repo.repo }}'
     fi
 
 - name: Push commits to gitlab http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ repo.path }}/{{ repo.repo }}
   shell: |
+    set -ex
     export GIT_TERMINAL_PROMPT=0
     cd '/ecorp/data/controller/last_imports/git_import/{{ repo.path }}/{{ repo.repo }}'
-    git remote add gitlab http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ repo.path }}/{{ repo.repo }} || true
-    git push gitlab --all
+    git push --mirror http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ repo.path }}/{{ repo.repo }}
 
 - name: Set GitLab project {{ repo.path }}/{{ repo.repo }} visibility to public
   community.general.gitlab_project:

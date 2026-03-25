@@ -1,0 +1,22 @@
+- name: Get gitlab runner token for project
+  include_tasks: get_runner_token.yml
+  when: project_server.link is defined
+
+- name: Create project server {{ project_server.name }}
+  include_role:
+    name: step/run_job
+    apply:
+      vars:
+        job:
+          project: "{{ project_server.creator | default('eu.linuxengineering/project-server') }}"
+          ref: master
+          job: custom-create
+          vars:
+            PROJECT_SERVER_NAME: "{{ project_server.name }}"
+            PROJECT_TYPE: "{{ project_server.type }}"
+            PROJECT_NETWORK_ROUTE: "{{ project_server.network_route | default('') }}"
+            PROJECT_NETWORK_SIZE: "{{ project_server.network_size | default('') }}"
+            PROJECT_DNS_MODE: "{{ project_server.dns_mode | default('static') }}"
+            SERVICE_DISCOVERY_PORT: "{{ project_server.discovery_port | default('') }}"
+            GITLAB_RUNNER_TOKEN: "{{ runner_details.runner.token | default('') }}"
+            

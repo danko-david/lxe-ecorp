@@ -1,0 +1,28 @@
+- name: Waiting for pipeline to run in http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ pipeline.project }}/pipelines"
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ pipeline.project | urlencode | regex_replace('/', '%2F') }}/pipelines/"
+    method: GET
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+  register: all_pipelines
+  until: >
+    all_pipelines.json | 
+    selectattr('status', 'in', ['running', 'pending', 'waiting_for_resource', 'preparing']) | 
+    list | length > 0
+  retries: 20
+  delay: 1
+  ignore_errors: true
+
+- name: Waiting on pipeline http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ pipeline.project }}/pipelines to be ready"
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ pipeline.project | urlencode | regex_replace('/', '%2F') }}/pipelines/"
+    method: GET
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+  register: all_pipelines
+  until: >
+    all_pipelines.json | 
+    selectattr('status', 'in', ['running', 'pending', 'waiting_for_resource', 'preparing']) | 
+    list | length == 0
+  retries: 300
+  delay: 5
