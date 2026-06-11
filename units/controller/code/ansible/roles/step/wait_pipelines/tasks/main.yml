@@ -1,4 +1,4 @@
-- name: Waiting for pipeline to run in http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ pipeline.project }}/pipelines"
+- name: "Waiting for pipeline to run in http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ pipeline.project }}/pipelines"
   ansible.builtin.uri:
     url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ pipeline.project | urlencode | regex_replace('/', '%2F') }}/pipelines/"
     method: GET
@@ -13,7 +13,7 @@
   delay: 1
   ignore_errors: true
 
-- name: Waiting on pipeline http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ pipeline.project }}/pipelines to be ready"
+- name: "Waiting on pipeline http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ pipeline.project }}/pipelines to be ready"
   ansible.builtin.uri:
     url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ pipeline.project | urlencode | regex_replace('/', '%2F') }}/pipelines/"
     method: GET

@@ -27,7 +27,8 @@
     set -ex
     export GIT_TERMINAL_PROMPT=0
     cd '/ecorp/data/controller/last_imports/git_import/{{ repo.path }}/{{ repo.repo }}'
-    git push --mirror http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ repo.path }}/{{ repo.repo }}
+    git push --all http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ repo.path }}/{{ repo.repo }}
+    git push --tags http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ repo.path }}/{{ repo.repo }}
 
 - name: Set GitLab project {{ repo.path }}/{{ repo.repo }} visibility to public
   community.general.gitlab_project:
