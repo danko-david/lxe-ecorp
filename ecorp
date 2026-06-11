@@ -17,7 +17,7 @@ _rh_try_ret_help()
 
 spawn_default()
 {
-	cd $ROOT
+	cd ${ROOT}
 	cd $2
 	if ! [ -e $3 ]
 	then
@@ -29,7 +29,7 @@ spawn_default()
 			bash <(echo 'cat << EOF' ; cat $3'.default' ; echo 'EOF') > $3
 		fi
 	fi
-	cd $ROOT
+	cd ${ROOT}
 }
 
 prepare()
@@ -83,7 +83,7 @@ run_in_container()
 {
 	_rh_try_ret_help 'Launch the ecorp infrastructure in a container'
 	# TODO only raw git clone
-	cd $ROOT
+	cd ${ROOT}
 	cd dev/wrap_container
 	dc up -d
 	cat << EOF | dc exec -T ecorp bash
@@ -110,10 +110,19 @@ cd ecorp
 	echo "route add -net \$(source ./.env; echo \$NET_CIDR) gw \$(hostname -i)"
 EOF
 
-
 # cycle in container:
 # docker compose down -v ; git clean -fxd ; git pull origin master ; ./ecorp up ; docker logs -f ecorp-controller-1
 
+}
+
+purge()
+{
+	_rh_try_ret_help 'Purge the system: stops all container and remove all user files and making git working directory clean as a whistle'
+	cd ${ROOT}
+	dc down -v
+	git clean -fxd
+	# because of git folders (recognised as sub repositories and excluded from clean)
+	rm -Rf ./data/*
 }
 
 ############################ RH built-in functions #############################
