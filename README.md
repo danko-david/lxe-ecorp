@@ -18,10 +18,3 @@ The infrastructure wrapped around 3 core technology:
 - gitlab _for_ code management and CI/CD
 - dns _for_ dns server to serve custom DNS records and delegated zones
 
-## TODO doc
-- explain .env config, key points
-- designed to be routed project
-- useful if you delegate/forward ecorp.intra.net to the host machine in your home network
-- `core` tag in CI/CD
-- ECORP_ global vars
-- 
