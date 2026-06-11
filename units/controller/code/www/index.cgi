@@ -36,7 +36,7 @@ Content-type: text/html
     </content>
 
     <footer>
-        &copy; LinuxEngineering::ECorp - <a target="_blank" href="https://www.linuxengineering.eu/resources/project/ecorp/">Project main page</a>
+        🄯 LinuxEngineering::ECorp - <a target="_blank" href="https://www.linuxengineering.eu/resources/project/ecorp/">Project main page</a>
     </footer>
 	<div id="popupOverlay" class="popup-overlay" onclick="closePopup()">
 		<div class="popup-window" onclick="event.stopPropagation()">
