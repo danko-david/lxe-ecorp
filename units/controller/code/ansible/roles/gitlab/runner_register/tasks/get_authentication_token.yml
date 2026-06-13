@@ -1,0 +1,21 @@
+- name: Create GitLab Runner authentication token
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/user/runners"
+    method: POST
+    headers:
+      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+    body_format: form-urlencoded
+    body:
+      runner_type: "{{ runner.runner_type | default('instance_type') }}"
+      description: "{{ runner.name }}"
+      tag_list: "{{ runner.tags | default('') }}"
+      run_untagged: "{{ runner.run_untagged | default(false) | string | lower }}"
+      locked: "{{ runner.locked | default(false) | string | lower }}"
+      access_level: "{{ runner.access_level | default('not_protected') }}"
+    status_code: 201
+    return_content: true
+  register: gitlab_runner_create_result
+
+- name: Set GitLab Runner authentication token fact
+  ansible.builtin.set_fact:
+    gitlab_runner_authentication_token: "{{ gitlab_runner_create_result.json.token | trim }}"

@@ -1,13 +1,9 @@
 - name: Check all runner registered
   ansible.builtin.include_tasks: is_runners_registered.yml
 
-- name: Get GitLab Runner registration token
-  ansible.builtin.include_tasks: get_registration_token.yml
-  when: not is_runners_registered
-
 - name: Register GitLab Runner
   ansible.builtin.include_tasks: register_runner.yml
   loop: "{{ runners }}"
   loop_control:
     loop_var: runner
-  when: not is_runners_registered
+  when: not runners_registered[runner.name]

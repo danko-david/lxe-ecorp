@@ -1,9 +1,12 @@
+- name: "Get GitLab Runner authentication token for {{ runner.name }}" 
+  ansible.builtin.include_tasks: get_authentication_token.yml
+
 - name: Register GitLab Runner
   ansible.builtin.shell: |
     {{ runner.target | default(runner_default_target) }} gitlab-runner register \
       --non-interactive \
       --url "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}" \
-      --registration-token "{{ gitlab_runner_registration_token }}" \
+      --registration-token "{{ gitlab_runner_authentication_token }}" \
       --executor "{{ runner.type | default('docker') }}" \
       --description "{{ runner.name }}" \
       --tag-list "{{ runner.tags | default('') }}" \

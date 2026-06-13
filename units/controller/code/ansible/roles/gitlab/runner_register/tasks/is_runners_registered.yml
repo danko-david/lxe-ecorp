@@ -1,6 +1,6 @@
-- name: Set is_runners_registered default value
-  set_fact:
-    is_runners_registered: true
+- name: Set runners_registered default value
+  ansible.builtin.set_fact:
+    runners_registered: {}
 
 - name: Check runner registered
   include_tasks: check_runner_registered.yml
