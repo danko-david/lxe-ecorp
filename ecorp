@@ -79,6 +79,12 @@ follow_provision()
 	dc exec controller /ecorp/units/controller/code/ecorp follow_provision
 }
 
+provision()
+{
+	_rh_try_ret_help 'Run provision in controller'
+	dc exec controller /ecorp/units/controller/code/ecorp controller_ansible_provision
+}
+
 run_in_container()
 {
 	_rh_try_ret_help 'Launch the ecorp infrastructure in a container'
