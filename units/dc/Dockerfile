@@ -1,8 +1,7 @@
-FROM debian:trixie
+FROM debian:latest
 
-RUN apt-get update
-
-RUN apt-get install -y samba-ad-dc samba-client krb5-user # krb5-workstation
+RUN apt-get update && apt-get install --no-install-recommends -y samba-ad-dc samba-client krb5-user \
+	&& apt clean && rm -rf /var/lib/apt/lists/*
 
 COPY dc /bin/dc
 

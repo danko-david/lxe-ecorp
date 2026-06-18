@@ -1,13 +1,13 @@
 FROM debian:latest
 
 # install basic utils
-    RUN apt-get update
-    RUN apt-get install -y tini nmap git nano sudo socat wget \
-    rsync dnsutils tmux curl netcat-openbsd net-tools jq iputils-ping \
+    RUN apt-get update && apt-get install --no-install-recommends -y tini git nano sudo wget \
+    rsync dnsutils curl netcat-openbsd net-tools jq iputils-ping \
     ca-certificates \
     ansible sshpass \
     apache2 python3 python3-pip cron ssh \
-    pandoc
+    pandoc \
+    && apt clean && rm -rf /var/lib/apt/lists/*
 
     RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
 
@@ -22,8 +22,8 @@ FROM debian:latest
     $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
     tee /etc/apt/sources.list.d/docker.list > /dev/null
 
-    RUN apt-get update
-    RUN apt-get install -y docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    RUN apt-get update && apt-get install --no-install-recommends -y docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin \
+    && apt clean && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --break-system-packages python-gitlab
 
