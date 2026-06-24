@@ -18,7 +18,8 @@
   when: gitlab_config.changed
 
 - name: Wait for GitLab to be ready
-  ansible.builtin.include_tasks: wait_for_gitlab.yml
+  include_role:
+    name: gitlab/wait_for_gitlab
 
 - name: Check root personal access token
   ansible.builtin.stat:
