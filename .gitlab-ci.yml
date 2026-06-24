@@ -15,9 +15,7 @@ autotest-default-install:
 
     # Prepare environment
     if [ ! -z $CATCH_CONTROL ] ; then tail -f /dev/null; fi
-    dockerd &
-    while true; do if docker ps ; then break; fi ; echo "Wait docker ready"; sleep 1 ; done
-
+    
     # Clean and empty docker instance
     docker system prune -af
     docker volume prune -af
