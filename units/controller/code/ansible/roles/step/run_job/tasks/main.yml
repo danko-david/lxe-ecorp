@@ -14,7 +14,7 @@
     status_code: 201
   register: pipeline_trigger
 
-- name: Waiting on pipeline http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ job.project }}/pipelines/{{ pipeline_trigger.json.id }} to be ready"
+- name: Waiting on pipeline http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/{{ job.project }}/pipelines/{{ pipeline_trigger.json.id }} to succeed"
   ansible.builtin.uri:
     url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/pipelines/{{ pipeline_trigger.json.id }}"
     method: GET
