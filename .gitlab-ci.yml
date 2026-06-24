@@ -11,7 +11,7 @@ autotest-default-install:
     # 2. Fallback: make the job manual
     - when: manual
   script: |
-    apk add --no-cache bash
+    apk add --no-cache bash grep
 
     # Prepare environment
     if [ ! -z $CATCH_CONTROL ] ; then tail -f /dev/null; fi
