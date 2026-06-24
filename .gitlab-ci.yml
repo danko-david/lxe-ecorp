@@ -3,7 +3,7 @@ stages:
 
 autotest-default-install:
   stage: test
-  image: devops-build-image:latest
+  image: docker:dind
   rules:
     # 1. If the variable is present, run automatically
     - if: $PIPE_AUTOTEST
@@ -11,9 +11,11 @@ autotest-default-install:
     # 2. Fallback: make the job manual
     - when: manual
   script: |
+    apk add --no-cache bash
+
     # Prepare environment
     if [ ! -z $CATCH_CONTROL ] ; then tail -f /dev/null; fi
-    service docker start
+    dockerd &
     while true; do if docker ps ; then break; fi ; echo "Wait docker ready"; sleep 1 ; done
 
     # Clean and empty docker instance
