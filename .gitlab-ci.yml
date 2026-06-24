@@ -1,0 +1,35 @@
+stages:
+  - test
+
+autotest-default-install:
+  stage: test
+  image: devops-build-image:latest
+  rules:
+    # 1. If the variable is present, run automatically
+    - if: $PIPE_AUTOTEST
+      when: always
+    # 2. Fallback: make the job manual
+    - when: manual
+  script: |
+    # Prepare environment
+    if [ ! -z $CATCH_CONTROL ] ; then tail -f /dev/null; fi
+    service docker start
+    while true; do if docker ps ; then break; fi ; echo "Wait docker ready"; sleep 1 ; done
+
+    # Clean and empty docker instance
+    docker system prune -af
+    docker volume prune -af
+
+    # Prepare ecorp
+    ./ecorp prepare
+    cat << EOF >> .env
+        NET_CIDR=$NET_CIDR
+        NET_DC=$NET_DC
+        NET_DNS=$NET_DNS
+        ECORP_DNS_CORE_ZONE_NAME=ecorp.lxe.intra.net
+    EOF
+    # Launch ecorp
+    ./ecorp up
+
+  # clean up whether failed or succeed
+  after_script: ./ecorp purge
