@@ -26,7 +26,7 @@ autotest-default-install:
         NET_CIDR=$NET_CIDR
         NET_DC=$NET_DC
         NET_DNS=$NET_DNS
-        ECORP_DNS_CORE_ZONE_NAME=ecorp.lxe.intra.net
+        ECORP_DNS_CORE_ZONE_NAME=$ECORP_DNS_CORE_ZONE_NAME
     EOF
     # Launch ecorp
     ./ecorp up
