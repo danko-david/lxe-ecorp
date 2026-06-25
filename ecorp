@@ -40,17 +40,6 @@ prepare()
 
     mkdir -p data/dns/zones/ data/storage
 
-	# disable network segmentation in docker
-	if ! iptables-save | grep -q 'A FORWARD -j ACCEPT'
-	then
-		iptables -t filter -I FORWARD 1 -j ACCEPT
-	fi
-
-	if ! iptables-save | grep -q 'A PREROUTING -j ACCEPT'
-	then
-		iptables -t raw -I PREROUTING -j ACCEPT
-	fi
-
 	spawn_default eval . .env
 	spawn_default plain settings ad-users.yml
 	spawn_default plain settings steps.yml
