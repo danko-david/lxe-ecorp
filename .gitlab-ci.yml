@@ -12,24 +12,9 @@ autotest-default-install:
     - when: manual
   script: |
     apk add --no-cache bash grep
-
+    
     # Prepare environment
     if [ ! -z $CATCH_CONTROL ] ; then tail -f /dev/null; fi
-    
-    # Clean and empty docker instance
-    docker system prune -af
-    docker volume prune -af
-
-    # Prepare ecorp
-    ./ecorp prepare
-    cat << EOF >> .env
-        NET_CIDR=$NET_CIDR
-        NET_DC=$NET_DC
-        NET_DNS=$NET_DNS
-        ECORP_DNS_CORE_ZONE_NAME=$ECORP_DNS_CORE_ZONE_NAME
-    EOF
-    # Launch ecorp
-    ./ecorp up
-
+    ./ecorp ci_test_infra
   # clean up whether failed or succeed
   after_script: ./ecorp purge
