@@ -12,9 +12,7 @@ autotest-default-install:
     - when: manual
   script: |
     apk add --no-cache bash grep
-    
+
     # Prepare environment
     if [ ! -z $CATCH_CONTROL ] ; then tail -f /dev/null; fi
     ./ecorp ci_test_infra
-  # clean up whether failed or succeed
-  after_script: ./ecorp purge
