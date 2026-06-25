@@ -118,7 +118,13 @@ ci_test_infra()
 	cd dev/ci_test
 	docker compose -p ci_test up -d --build
 
-	trap 'docker compose -p ci_test down -v || true' EXIT
+	cleanup()
+	{
+		docker compose -p ci_test down -v || true
+		exit 0
+	}
+
+	trap cleanup EXIT
 
 	cat << EOF | docker compose -p ci_test exec -T ecorp bash
 	set -ex
