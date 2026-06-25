@@ -133,7 +133,7 @@ ci_test_infra()
 	docker ps
 
 	cd /source
-	./ecorp up
+	#./ecorp up
 EOF
 }
 
