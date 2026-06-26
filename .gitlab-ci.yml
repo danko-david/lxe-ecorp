@@ -1,5 +1,19 @@
 stages:
+  - build
   - test
+
+build-diorama:
+  stage: build
+  image: docker:dind
+  rules:
+    - if: '$CI_COMMIT_REF_NAME == "master"'
+      when: always
+  script: |
+    apk add --no-cache bash grep
+
+    # Prepare environment
+    if [ ! -z $CATCH_CONTROL ] ; then tail -f /dev/null; fi
+    ./ecorp ci_ensure_diorama
 
 autotest-default-install:
   stage: test
@@ -16,3 +30,4 @@ autotest-default-install:
     # Prepare environment
     if [ ! -z $CATCH_CONTROL ] ; then tail -f /dev/null; fi
     ./ecorp ci_test_infra
+

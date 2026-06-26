@@ -4,6 +4,14 @@
 # Used to wrap custom operations inside one script
 ############################# RH helper functions ##############################
 
+trapERR()
+{
+	ex=$?
+	echo ">> Failing command is '$BASH_COMMAND' on line $BASH_LINENO and status is $ex <<" >&2
+	exit $ex
+}
+trap trapERR ERR
+
 ROOT=$(dirname $(readlink -f $0))
 
 _rh_try_ret_help()
@@ -131,7 +139,6 @@ follow_provision()
 	done
 	ex=$(cat $exit_file)
 	echo "Provisioning exited: "$ex
-	kill $TPID
 	exit $ex
 }
 

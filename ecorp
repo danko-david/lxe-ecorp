@@ -4,6 +4,16 @@
 # Used to wrap custom operations inside one script
 ############################# RH helper functions ##############################
 
+ECORP_VERSION=1.0.0
+
+trapERR()
+{
+	ex=$?
+	echo ">> Failing command is '$BASH_COMMAND' on line $BASH_LINENO and status is $ex <<" >&2
+	exit $ex
+}
+trap trapERR ERR
+
 ROOT=$(dirname $(readlink -f $0))
 
 _rh_try_ret_help()
@@ -74,24 +84,24 @@ provision()
 	dc exec controller /ecorp/units/controller/code/ecorp controller_ansible_provision
 }
 
+ensure_wrap_base_image()
+{
+	cd ${ROOT}
+	docker build -t ecorp_wrap_base -f dev/ecorp_wrap_base.Dockerfile dev
+}
+
 run_in_container()
 {
 	_rh_try_ret_help 'Launch the ecorp infrastructure in a container'
-	# TODO only raw git clone
+	
+	ensure_wrap_base_image
+
 	cd ${ROOT}
 	cd dev/wrap_container
 	dc up -d
 	cat << EOF | dc exec -T ecorp bash
 	set -ex
-		# wait for docker ready
-		rem=30
-		while ! docker ps && [ \$rem '>' 0 ]
-		do
-			rem=\$(expr \$rem - 1)
-			sleep 1
-			echo "Waiting secounds remaining: "\$rem
-		done
-	docker ps
+	/source/ecorp wait_docker_ready
 	# disable raw protection prevents accessing containers routed style
 	# iptables -t raw -I PREROUTING 1 -j ACCEPT
 
@@ -113,7 +123,7 @@ EOF
 ci_test_infra()
 {
 	_rh_try_ret_help 'CI/CD: Launch the ecorp infrastructure in a container for testing.'
-	
+	ensure_wrap_base_image
 	cd ${ROOT}
 	cd dev/ci_test
 	docker compose -p ci_test up -d --build
@@ -128,19 +138,129 @@ ci_test_infra()
 
 	cat << EOF | docker compose -p ci_test exec -T ecorp bash
 	set -ex
-	# wait for docker ready
-	rem=30
-	while ! docker ps && [ \$rem '>' 0 ]
-	do
-		rem=\$(expr \$rem - 1)
-		sleep 1
-		echo "Waiting secounds remaining: "\$rem
-	done
-	docker ps
-
-	cd /source
+	cd /ecorp
+	./ecorp wait_docker_ready
 	./ecorp up
 EOF
+}
+
+ci_ensure_diorama()
+{
+	# Build ecorp_diorama if not yet available with current version
+	
+	IMAGE=ecorp_diorama
+	VERSION=$ECORP_VERSION
+
+	if ! docker pull ${REPO}${IMAGE}:${VERSION} || [ ! -z $FORCE_BUILD_IMAGE ]
+	then
+		
+		if [ ! -z $DOCKER_REGISTRY ]
+		then
+			echo "$DOCKER_REGISTRY_PASSWORD" | docker login $DOCKER_REGISTRY -u $DOCKER_REGISTRY_USERNAME --password-stdin
+			export REPO=${DOCKER_REGISTRY}/
+		fi
+
+		build_diorama_image
+
+		if [ ! -z ${REPO} ]
+		then
+			docker push ${REPO}${IMAGE}:${VERSION}
+		fi
+
+		# Also set "latest" tag on this image if not prevented
+		if [ -z $NOT_LATEST ]
+		then
+			docker tag ${REPO}${IMAGE}:${VERSION} ${REPO}${IMAGE}:latest
+			if [ ! -z ${REPO} ]
+			then
+			docker push ${REPO}${IMAGE}:latest
+			fi
+		fi
+		else
+	echo "Version already resent $IMAGE:$VERSION"
+	exit 0
+	fi
+}
+
+wait_docker_ready()
+{
+	rem=30
+	while ! service docker start && ! docker ps && [ $rem '>' 0 ]
+	do
+		rem=$(expr $rem - 1)
+		sleep 1
+		echo "Waiting secounds remaining: "$rem
+	done
+	docker ps
+}
+
+inside_diorama__build()
+{
+	# used only inside image building
+	set -ex
+	wait_docker_ready
+
+	cd /ecorp
+	./ecorp up
+	docker buildx prune -af
+	service docker stop
+	service containerd stop
+
+	mkdir /seed_data
+	cp -pfr /var/lib/docker /seed_data/ || true
+	cp -pfr /var/lib/containerd /seed_data/ || true
+}
+
+inside_diorama__launch()
+{
+	# On first start
+	if ! [ -d /var/lib/docker/containers ]
+	then
+		cp -pfr /seed_data/docker/* /var/lib/docker
+		cp -pfr /seed_data/containerd/* /var/lib/containerd
+	fi
+	exec /usr/sbin/init
+}
+
+build_diorama_image()
+{
+	_rh_try_ret_help 'Build ecorp_diorama image: an image contains this stack installed and ready to start'
+	ensure_wrap_base_image
+	cd ${ROOT}
+
+	docker build -t tmp_ecorp_diorama_build_base -f dev/ecorp_diorama_build_base.Dockerfile .
+
+	cleanup()
+	{
+		docker stop ecorp_diorama_builder_container || true
+		docker rm ecorp_diorama_builder_container || true
+		docker volume rm ecorp_diorama_builder_docker ecorp_diorama_builder_containerd
+		exit 0
+	}
+
+	trap cleanup EXIT
+
+	set -ex
+
+	docker run \
+	-d \
+	-it \
+	--cap-add=ALL \
+	--security-opt seccomp=unconfined \
+	--security-opt apparmor=unconfined \
+	--security-opt systempaths=unconfined \
+	--tmpfs /tmp \
+	--tmpfs /run \
+	-v /sys/fs/cgroup:/sys/fs/cgroup \
+	-v ecorp_diorama_builder_docker:/var/lib/docker \
+	-v ecorp_diorama_builder_containerd:/var/lib/containerd \
+	--name ecorp_diorama_builder_container \
+		tmp_ecorp_diorama_build_base 
+
+	docker exec ecorp_diorama_builder_container /ecorp/ecorp inside_diorama__build
+	docker stop ecorp_diorama_builder_container
+	docker commit ecorp_diorama_builder_container ecorp_diorama:$ECORP_VERSION
+	docker image tag ecorp_diorama:$ECORP_VERSION ecorp_diorama:latest
 }
 
 purge()

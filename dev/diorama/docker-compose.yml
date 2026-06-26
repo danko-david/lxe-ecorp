@@ -1,7 +1,8 @@
 services:
   ecorp:
+    # For image: `./ecorp build_diorama_image` before launch this compose
+    image: ecorp_diorama:latest
     restart: unless-stopped
-    image: ecorp_wrap_base:latest
     cap_add:
       - ALL
     security_opt:
@@ -15,7 +16,11 @@ services:
       # Required for systemd
       - /sys/fs/cgroup:/sys/fs/cgroup
       # Required for docker (Overlay can't be mounted on overlay)
-      - ./data/docker:/var/lib/docker
-      - ./data/containerd:/var/lib/containerd
+      - docker:/var/lib/docker
+      - containerd:/var/lib/containerd
+      - storage:/ecorp/data/storage
 
-      - ../../:/source
+volumes:
+  docker:
+  containerd:
+  storage:

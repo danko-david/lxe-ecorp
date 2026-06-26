@@ -1,9 +1,9 @@
 FROM debian:latest
 
-RUN apt-get update
-
 # Install base utils
-	RUN apt-get install -y curl
+RUN apt-get update \
+    && apt-get install --no-install-recommends -y systemd systemd-sysv curl ca-certificates net-tools iptables\
+    && apt clean && rm -rf /var/lib/apt/lists/*
 
 # install docker (source: https://docs.docker.com/engine/install/debian/#install-using-the-repository)
     RUN install -m 0755 -d /etc/apt/keyrings
@@ -13,18 +13,12 @@ RUN apt-get update
 "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/debian \
 $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
 tee /etc/apt/sources.list.d/docker.list > /dev/null
-    RUN apt-get update
-    RUN apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    RUN apt-get update \
+        && apt-get install --no-install-recommends -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin \
+        && apt clean && rm -rf /var/lib/apt/lists/*
 
-# Create user with password
-RUN useradd -m user && echo 'user:password' | chpasswd
-RUN echo "root:password" | chpasswd
-
+# Enable
 RUN systemctl enable docker containerd
-
-RUN apt-get clean
-
-RUN usermod -aG sudo user
 
 STOPSIGNAL SIGRTMIN+5
 
