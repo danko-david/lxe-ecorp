@@ -1,7 +1,8 @@
 services:
   ecorp:
     # For image: `./ecorp build_diorama_image` before launch this compose
-    image: ecorp_diorama:latest
+    # Or modify to `lxeu/ecorp-diorama:latest` to launch from public repo
+    image: ecorp-diorama:latest
     restart: unless-stopped
     cap_add:
       - ALL
