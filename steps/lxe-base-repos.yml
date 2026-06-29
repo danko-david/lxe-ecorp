@@ -14,3 +14,12 @@ steps:
       - url: https://github.com/danko-david/lxe-docker-compose-expo
         path: eu.linuxengineering
         repo: docker-compose-expo
+
+      - url: https://github.com/danko-david/lxe-module-build-images
+        path: eu.linuxengineering
+        repo: build-images
+
+  # Wait for build images to get ready
+  - step: wait_pipelines
+    pipeline:
+      project: eu.linuxengineering/build-images
