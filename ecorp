@@ -148,7 +148,7 @@ ci_ensure_diorama()
 {
 	# Build ecorp_diorama if not yet available with current version
 	
-	IMAGE=ecorp_diorama
+	IMAGE=ecorp-diorama
 	VERSION=$ECORP_VERSION
 
 	if ! docker pull ${REPO}${IMAGE}:${VERSION} || [ ! -z $FORCE_BUILD_IMAGE ]
@@ -177,7 +177,7 @@ ci_ensure_diorama()
 			fi
 		fi
 		else
-	echo "Version already resent $IMAGE:$VERSION"
+	echo "Version already present $IMAGE:$VERSION"
 	exit 0
 	fi
 }
@@ -224,7 +224,7 @@ inside_diorama__launch()
 
 build_diorama_image()
 {
-	_rh_try_ret_help 'Build ecorp_diorama image: an image contains this stack installed and ready to start'
+	_rh_try_ret_help 'Build ecorp-diorama image: an image contains this stack installed and ready to start'
 	ensure_wrap_base_image
 	cd ${ROOT}
 
@@ -259,8 +259,8 @@ build_diorama_image()
 
 	docker exec ecorp_diorama_builder_container /ecorp/ecorp inside_diorama__build
 	docker stop ecorp_diorama_builder_container
-	docker commit ecorp_diorama_builder_container ecorp_diorama:$ECORP_VERSION
-	docker image tag ecorp_diorama:$ECORP_VERSION ecorp_diorama:latest
+	docker commit ecorp_diorama_builder_container ecorp-diorama:$ECORP_VERSION
+	docker image tag ecorp-diorama:$ECORP_VERSION ecorp-diorama:latest
 }
 
 purge()
