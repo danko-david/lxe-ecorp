@@ -1,0 +1,16 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+for f in $(project_files)
+do
+	shebang=no
+	if head -c 2 $f | grep -q '^#!'; then shebang=yes; fi
+	if [ -x $f ] && [ $shebang = no ]
+	then
+		fail "$f is executable but is not a script"
+	fi
+	if ! [ -x $f ] && [ $shebang = yes ]
+	then
+		fail "$f is a script but is not executable"
+	fi
+done

@@ -1,0 +1,10 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+for f in $(project_files)
+do
+	if head -n 1 $f | grep -q '^#!/bin/bash'
+	then
+		bash -n $f || fail "$f does not parse"
+	fi
+done

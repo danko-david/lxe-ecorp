@@ -1,0 +1,35 @@
+# Shared by the tests, sourced: `. $(dirname $(readlink -f $0))/../lib`
+
+ROOT=$(dirname $(dirname $(readlink -f ${BASH_SOURCE[0]})))
+ROLES=${ROOT}/units/controller/code/ansible/roles
+
+set -e
+cd ${ROOT}
+
+fail()
+{
+	echo "$@" >&2
+	exit 1
+}
+
+# All project files, without runtime state and spawned config
+project_files()
+{
+	find . -type f \
+		-not -path './.git/*' \
+		-not -path '*/data/*' \
+		-not -path '*/tmp/*' \
+		-not -path './.env' \
+		-not -path './settings/*.yml'
+}
+
+# Copy of what `prepare` works with in a temporary directory, removed on exit.
+# Sets SANDBOX.
+make_sandbox()
+{
+	SANDBOX=$(mktemp -d)
+	trap 'rm -rf ${SANDBOX}' EXIT
+	mkdir ${SANDBOX}/settings
+	cp ecorp .env.default ${SANDBOX}/
+	cp settings/*.default ${SANDBOX}/settings/
+}

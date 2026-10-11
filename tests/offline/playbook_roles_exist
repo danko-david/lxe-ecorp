@@ -1,0 +1,15 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+# roles listed in the playbook and the ones included by a fixed name
+roles=$({
+	grep -oP '^    - \K\S+$' units/controller/code/ansible/provision.yml
+	grep -rhoP '^\s+name: "?\K(dc|gitlab|step)/[a-z_]+(?="?$)' ${ROLES}
+} | sort -u)
+
+[ -n "$roles" ] || fail "found no roles in provision.yml"
+
+for r in $roles
+do
+	[ -f ${ROLES}/$r/tasks/main.yml ] || fail "role $r is used but ${ROLES}/$r/tasks/main.yml does not exist"
+done

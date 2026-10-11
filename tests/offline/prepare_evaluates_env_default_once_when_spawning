@@ -1,0 +1,11 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+${SANDBOX}/ecorp prepare
+
+# \$ in .env.default stays a reference, resolved when .env is read
+grep -qxF 'ECORP_DNS_SERVER_IP=$NET_DC' ${SANDBOX}/.env || fail "escaped variable was not kept as a reference"
+
+# $( ) in .env.default is resolved at spawn time, relative to the project root
+grep -qxF "ECORP_HOST_STORAGE_ROOT=$(readlink -f ${SANDBOX})/data/storage" ${SANDBOX}/.env || fail "storage root was not resolved to the project's data/storage"

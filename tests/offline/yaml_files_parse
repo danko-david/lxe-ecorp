@@ -1,0 +1,10 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+# exit status 77 tells run_tests that the test was skipped
+python3 -c 'import yaml' 2> /dev/null || { echo "python3 with PyYAML is not available"; exit 77; }
+
+for f in $(project_files | grep -P '\.(yml|yml\.default)$')
+do
+	python3 -c 'import sys, yaml; list(yaml.safe_load_all(open(sys.argv[1])))' $f 2> /dev/null || fail "$f is not valid YAML"
+done

@@ -1,6 +1,14 @@
 stages:
+  - check
   - build
   - test
+
+offline-tests:
+  stage: check
+  image: docker:dind
+  script: |
+    apk add --no-cache bash grep
+    ./ecorp run_tests
 
 build-diorama:
   stage: build

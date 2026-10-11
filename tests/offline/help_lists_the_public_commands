@@ -1,0 +1,8 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+help=$(./ecorp help)
+for cmd in prepare up provision follow_provision purge run_in_container build_diorama_image ci_test_infra ci_ensure_diorama run_tests
+do
+	grep -qP "^\t$cmd - .+" <<< "$help" || fail "'$cmd' is missing from ./ecorp help"
+done

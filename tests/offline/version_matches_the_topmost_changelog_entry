@@ -1,0 +1,6 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+changelog=$(grep -m 1 -oP '^\d+\.\d+\.\d+(?=:)' CHANGELOG.md)
+helper=$(grep -m 1 -oP '(?<=^ECORP_VERSION=).*' ecorp)
+[ "$changelog" = "$helper" ] || fail "CHANGELOG.md starts with '$changelog' but ECORP_VERSION is '$helper'"

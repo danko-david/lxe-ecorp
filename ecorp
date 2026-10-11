@@ -4,7 +4,7 @@
 # Used to wrap custom operations inside one script
 ############################# RH helper functions ##############################
 
-ECORP_VERSION=1.1.0
+ECORP_VERSION=1.2.0
 
 trapERR()
 {
@@ -45,10 +45,10 @@ spawn_default()
 prepare()
 {
 	_rh_try_ret_help 'Do the necessary preparation steps before launching: spawning default config files, creating directories'
-    
+
 	cd ${ROOT}
 
-    mkdir -p data/dns/zones/ data/storage
+	mkdir -p data/dns/zones/ data/storage
 
 	spawn_default eval . .env
 	spawn_default plain settings ad-users.yml
@@ -62,13 +62,13 @@ dc()
 
 up()
 {
-    _rh_try_ret_help 'Starts the infrastructure and follows until ready'
-    set -e
-    
-    cd ${ROOT}
+	_rh_try_ret_help 'Starts the infrastructure and follows until ready'
+	set -e
+
+	cd ${ROOT}
 
 	prepare
-    dc up -d --build
+	dc up -d --build
 	follow_provision
 }
 
@@ -146,8 +146,8 @@ EOF
 
 ci_ensure_diorama()
 {
-	# Build ecorp_diorama if not yet available with current version
-	
+	_rh_try_ret_help 'CI/CD: Build and publish the ecorp-diorama image if the current version is not in the registry yet.'
+
 	IMAGE=ecorp-diorama
 	VERSION=$ECORP_VERSION
 
@@ -263,9 +263,36 @@ build_diorama_image()
 	docker image tag ecorp-diorama:$ECORP_VERSION ecorp-diorama:latest
 }
 
+run_tests()
+{
+	_rh_try_ret_help 'Run the offline tests in tests/offline (needs no docker or network). $1: optional part of a test name to select tests'
+	cd ${ROOT}
+	failed=0
+	for t in tests/offline/*${1}*
+	do
+		if out=$($t 2>&1)
+		then
+			echo "ok   $(basename $t)"
+		elif [ $? = 77 ]
+		then
+			echo "skip $(basename $t): $out"
+		else
+			echo "FAIL $(basename $t)"
+			echo "$out" | sed 's/^/\t/'
+			failed=$(expr $failed + 1)
+		fi
+	done
+
+	if [ $failed != 0 ]
+	then
+		echo "$failed test(s) failed"
+		exit 1
+	fi
+}
+
 purge()
 {
-	_rh_try_ret_help 'Purge the system: stops all container and remove all user files and making git working directory clean as a whistle'
+	_rh_try_ret_help 'Purge the system: stops all container, removes the volumes and everything under ./data. Keeps .env and the files in settings'
 	cd ${ROOT}
 	dc down -v
 	# git clean -fxd

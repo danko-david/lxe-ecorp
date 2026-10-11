@@ -1,0 +1,10 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+echo 'NET_CIDR=10.1.2.0/24' > ${SANDBOX}/.env
+echo 'ad_users: []' > ${SANDBOX}/settings/ad-users.yml
+${SANDBOX}/ecorp prepare
+
+[ "$(cat ${SANDBOX}/.env)" = 'NET_CIDR=10.1.2.0/24' ] || fail ".env was overwritten"
+[ "$(cat ${SANDBOX}/settings/ad-users.yml)" = 'ad_users: []' ] || fail "settings/ad-users.yml was overwritten"

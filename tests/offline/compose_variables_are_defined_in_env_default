@@ -1,0 +1,16 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+# ${VAR} substitutions and `- VAR` pass-through entries of the environment: blocks
+vars=$({
+	grep -oP '(?<=\$\{)[A-Z0-9_]+(?=\})' docker-compose.yml
+	awk '/^ +environment:/ { env = 1; next } env && /^ +- / { print; next } { env = 0 }' docker-compose.yml \
+		| grep -oP '^\s+- \K[A-Z0-9_]+$'
+} | sort -u)
+
+[ -n "$vars" ] || fail "found no variables in docker-compose.yml"
+
+for v in $vars
+do
+	grep -q "^$v=" .env.default || fail "docker-compose.yml uses $v but .env.default does not define it"
+done

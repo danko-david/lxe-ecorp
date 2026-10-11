@@ -1,0 +1,12 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+for f in settings/steps.yml.default steps/*.yml
+do
+	steps=$(grep -oP '^\s+- step: \K\S+' $f)
+	[ -n "$steps" ] || fail "$f defines no step"
+	for s in $steps
+	do
+		[ -f ${ROLES}/step/$s/tasks/main.yml ] || fail "$f uses step '$s' but there is no role step/$s"
+	done
+done

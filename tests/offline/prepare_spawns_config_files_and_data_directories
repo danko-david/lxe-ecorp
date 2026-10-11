@@ -1,0 +1,17 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+${SANDBOX}/ecorp prepare
+
+for f in .env settings/ad-users.yml settings/steps.yml
+do
+	[ -f ${SANDBOX}/$f ] || fail "$f was not spawned"
+done
+
+for d in data/dns/zones data/storage
+do
+	[ -d ${SANDBOX}/$d ] || fail "$d was not created"
+done
+
+cmp -s settings/steps.yml.default ${SANDBOX}/settings/steps.yml || fail "settings/steps.yml is not a plain copy of its default"
