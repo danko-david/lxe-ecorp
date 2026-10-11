@@ -1,0 +1,32 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+user=$(grep -m 1 -oP '^\s+- user: \K\S+' settings/ad-users.yml)
+password=$(grep -m 1 -oP '^\s+password: \K\S+' settings/ad-users.yml)
+
+# Fills the LDAP tab of the sign in page like a browser, prints where GitLab sends the user
+# $1: user, $2: password
+sign_in()
+{
+	in_controller bash -c '
+		jar=$(mktemp)
+		token=$(curl -s -c $jar "http://gitlab.$0/users/sign_in" | grep -oP "name=\"csrf-token\" content=\"\K[^\"]+")
+		curl -s -o /dev/null -b $jar -w "%{redirect_url}" \
+			--data-urlencode "authenticity_token=$token" \
+			--data-urlencode "username=$1" \
+			--data-urlencode "password=$2" \
+			"http://gitlab.$0/users/auth/ldapmain/callback"
+		rm $jar
+	' "${ZONE}" "$1" "$2"
+}
+
+target=$(sign_in "$user" "not-the-password-of-$user")
+grep -q '/users/sign_in' <<< "$target" || fail "GitLab accepted a wrong password for $user (sent to '$target')"
+
+target=$(sign_in "$user" "$password")
+[ -n "$target" ] || fail "GitLab did not answer the sign in of $user with a redirect"
+grep -q '/users/sign_in' <<< "$target" && fail "GitLab refused the domain user $user with its password"
+
+# the first sign in creates the GitLab user from the directory entry
+provider=$(gitlab_api "users?username=$user" '.[0].identities[0].provider')
+[ "$provider" = ldapmain ] || fail "$user is not a GitLab user from LDAP after signing in (identity: $provider)"

@@ -55,7 +55,7 @@ volumes:
 | Tag | Built | Content |
 | --- | --- | --- |
 | `<version>` | once, when the version of `./ecorp` is raised on `master` | That version of this project on the service images of that day. |
-| `<version>-w<week>` | by the weekly schedule | The same version of this project, rebuilt on the newest Debian, GitLab, runner and CoreDNS images, so their fixes are shipped. `<week>` is the ISO week of the year. |
+| `<version>-<year>w<week>` | by the weekly schedule | The same version of this project, rebuilt on the newest Debian, GitLab, runner and CoreDNS images, so their fixes are shipped. `1.2.0-26w42` is the build of ISO week 42 of 2026. |
 | `latest` | with both | The newest of the above. |
 
 The service images are deliberately not pinned: the weekly build is what keeps the diorama

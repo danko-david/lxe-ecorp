@@ -212,12 +212,12 @@ ci_ensure_diorama()
 
 ci_weekly_diorama()
 {
-	_rh_try_ret_help 'CI/CD: Rebuild the ecorp-diorama image on the newest base images and publish it as <version>-w<week of the year>. Meant for a weekly schedule.'
+	_rh_try_ret_help 'CI/CD: Rebuild the ecorp-diorama image on the newest base images and publish it as <version>-<year>w<week>, like 1.2.0-26w42. Meant for a weekly schedule.'
 	diorama_registry
 
 	IMAGE_BUILD_OPTS="--pull --no-cache"
 	build_diorama_image
-	diorama_publish ${ECORP_VERSION}-w$(date +%V)
+	diorama_publish ${ECORP_VERSION}-$(date +%gw%V)
 }
 
 wait_docker_ready()

@@ -83,14 +83,12 @@ Spawned from `.env.default` by `prepare`. The default file is evaluated by bash 
 | `NET_CIDR` | `192.168.69.0/24` | Subnet of the docker bridge all infrastructure containers are attached to. |
 | `NET_DC` | `192.168.69.10` | Static address of the domain controller, which is also the DNS server of the containers. |
 | `NET_DNS` | `192.168.69.9` | Static address of CoreDNS, the forwarder of the domain controller. |
-| `DC_REALM` | `ecorp` | Realm of the domain; also the LDAP base (`DC=ecorp`). |
-| `DC_DOMAIN` | `ecorp.intra` | Domain (workgroup) of the domain controller. |
 | `DC_ADMIN_PASS` | `Passw0rd` | Password of the domain `Administrator`. |
 | `GITLAB_ROOT_PASSWORD` | `@Password123` | Password of the GitLab `root` user. |
 | `HOME_WWW_USER`, `HOME_WWW_PASSWORD` | not set | Set both to protect the management web interface with a user name and password. |
 | `ECORP_DNS_SERVER_IP` | `$NET_DC` | DNS server for resolving internal names, for use by pipelines. |
 | `ECORP_CORE_NETWORK_BRIDGE` | `ecorp_core` | Name of the docker network of the stack, for projects that deploy containers into it. It has to stay the name compose gives the network. |
-| `ECORP_DNS_CORE_ZONE_NAME` | `e-corp.intra.net` | DNS zone of the containers on this host. |
+| `ECORP_DNS_CORE_ZONE_NAME` | `e-corp.intra.net` | DNS zone of the containers on this host. The domain of the domain controller is named after it: `ad.<zone>`, see [doc/dc.md](doc/dc.md). |
 | `ECORP_HOST_STORAGE_ROOT` | `<project>/data/storage` | Where project servers keep their storage on the host. |
 | `ECORP_SSH_EXTRA_AUTH` | empty | Extra SSH public keys, one per line, accepted by the controller and by every machine managed by this system, next to the key the controller generates for itself. See [doc/controller.md](doc/controller.md). |
 
@@ -119,7 +117,7 @@ Steps executed at the end of provisioning, in order, once per content of the fil
 
 - `offline-tests` runs `./ecorp run_tests` on every pipeline.
 - `build-diorama` (on `master`) runs `./ecorp ci_ensure_diorama`: builds and publishes `ecorp-diorama:<ECORP_VERSION>` and `latest` unless that version is already in the registry. Raising the version in `./ecorp` is therefore what publishes a new image.
-- `weekly-diorama` (scheduled pipelines on `master`) runs `./ecorp ci_weekly_diorama`: rebuilds the current version on the newest base images and publishes it as `<ECORP_VERSION>-w<week>` and `latest`. It needs a pipeline schedule in GitLab.
+- `weekly-diorama` (scheduled pipelines on `master`) runs `./ecorp ci_weekly_diorama`: rebuilds the current version on the newest base images and publishes it as `<ECORP_VERSION>-<year>w<week>` (`1.2.0-26w42`) and `latest`. It needs a pipeline schedule in GitLab.
 - `autotest-default-install` (manual, or automatic with `PIPE_AUTOTEST`) runs `./ecorp ci_test_infra`: a full install in a container, followed by the install tests. The job fails if the install or a test fails.
 
 Variables these read:
@@ -137,7 +135,7 @@ Variables these read:
 ## Tests
 
 - `./ecorp run_tests` runs every executable in `tests/offline/`. They need no docker and no network and check the helper script, the spawning of configuration, the consistency of the compose file, the playbook and the step files, and what the CI commands do with docker (against `tests/fake/docker`, which only records its calls). An argument selects tests by a part of their name.
-- `./ecorp run_tests_install` runs `tests/install/` against a running, provisioned stack on the machine where it runs: the access token, the SSH keys, the web interface, the firewall rules of the host-controller, the imported users, and a second provisioning. They restart the host-controller.
+- `./ecorp run_tests_install` runs `tests/install/` against a running, provisioned stack on the machine where it runs: the access token, the SSH keys, the web interface, the firewall rules of the host-controller, the imported users, the sign in of a domain user to GitLab, and a second provisioning. They restart the host-controller.
 - `./ecorp ci_test_infra` is the full test: installs the stack from zero in a container and runs the install tests in it. Needs docker and the internet, and takes a while.
 
 ## Directories

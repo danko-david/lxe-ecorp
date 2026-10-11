@@ -1,4 +1,7 @@
 - name: Configure LDAP in GitLab
+  vars:
+    # ad.e-corp.intra.net => DC=ad,DC=e-corp,DC=intra,DC=net
+    ldap_base: "{{ lookup('env', 'DC_REALM').split('.') | map('regex_replace', '^', 'DC=') | join(',') }}"
   blockinfile:
     marker: "# {mark} ANSIBLE MANAGED BLOCK - LDAP CONFIG"
     path: /ecorp/data/gitlab/config/gitlab.rb
@@ -10,12 +13,12 @@
           'host' => 'dc.{{ lookup("env", "ECORP_DNS_CORE_ZONE_NAME") }}',
           'port' => 636,
           'uid' => 'sAMAccountName',
-          'bind_dn' => 'Administrator@{{ lookup("env", "DC_DOMAIN") }}',
+          'bind_dn' => 'CN=Administrator,CN=Users,{{ ldap_base }}',
           'password' => '{{ lookup("env", "DC_ADMIN_PASS") }}',
           'encryption' => 'simple_tls',
           'verify_certificates' => false,
-          'active_directory' => false,
-          'base' => 'DC={{ lookup("env", "DC_REALM") }}',
+          'active_directory' => true,
+          'base' => '{{ ldap_base }}',
           'user_filter' => '(objectClass=user)'
         }
       }

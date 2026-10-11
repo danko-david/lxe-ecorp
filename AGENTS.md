@@ -80,7 +80,7 @@ _First version, written from how the repository looks at 1.2.0. Pending review b
 - The version is also the tag of the published `ecorp-diorama` image: `ci_ensure_diorama`
   builds and publishes on `master` whenever the registry has no image for the current version.
   Raising the version therefore publishes; changing the stack without raising it does not,
-  until the weekly build (`ci_weekly_diorama`) publishes it as `<version>-w<week>`.
+  until the weekly build (`ci_weekly_diorama`) publishes it as `<version>-<year>w<week>`.
 - Images are built from what git would commit (`build_source_image`), never from the whole
   working directory. Service images stay unpinned on purpose, the weekly build ships their
   fixes.

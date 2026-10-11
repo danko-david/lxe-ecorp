@@ -4,7 +4,7 @@
 make_sandbox
 use_fake_docker
 version=$(grep -m 1 -oP '(?<=^ECORP_VERSION=).*' ecorp)
-tag=$version-w$(date +%V)
+tag=$version-$(date +%gw%V)
 
 REPO=lxeu/ ${SANDBOX}/ecorp ci_weekly_diorama
 

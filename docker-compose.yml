@@ -22,13 +22,16 @@ services:
   dc:
     <<: *def
     privileged: true # required to manage file ACLs
-    hostname: dc.${DC_DOMAIN}
+    hostname: dc.${DC_DOMAIN:-ad.${ECORP_DNS_CORE_ZONE_NAME}}
     build:
       context: units/dc
     environment:
       - DC_DNS_FORWARDER=${NET_DNS}
-      - DC_REALM
-      - DC_DOMAIN
+      - ECORP_DNS_CORE_ZONE_NAME
+      # the domain is named after the zone; installations made before 1.2.0
+      # keep the names they were created with in .env
+      - DC_REALM=${DC_REALM:-ad.${ECORP_DNS_CORE_ZONE_NAME}}
+      - DC_DOMAIN=${DC_DOMAIN:-}
       - DC_ADMIN_PASS
     # can't bind mount with acl support, so I use a volume
     volumes:
@@ -43,8 +46,7 @@ services:
       context: units/controller
     environment:
       - ECORP_DNS_CORE_ZONE_NAME
-      - DC_REALM
-      - DC_DOMAIN
+      - DC_REALM=${DC_REALM:-ad.${ECORP_DNS_CORE_ZONE_NAME}}
       - DC_ADMIN_PASS
       - HOME_WWW_USER
       - HOME_WWW_PASSWORD

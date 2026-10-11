@@ -53,6 +53,14 @@ render_file()
 entrypoint()
 {
     set -ex
+    # short (NetBIOS) name of the domain: first label of the zone, at most 15 characters
+    if [ -z "$DC_DOMAIN" ]
+    then
+        DC_DOMAIN=${ECORP_DNS_CORE_ZONE_NAME%%.*}
+        DC_DOMAIN=${DC_DOMAIN:0:15}
+        DC_DOMAIN=${DC_DOMAIN^^}
+    fi
+
     mkdir -p /var/lib/samba/{usershare,private,printers,winbindd_privileged}
     mkdir -p /var/lib/samba/sysvol/$DC_REALM/scripts
 

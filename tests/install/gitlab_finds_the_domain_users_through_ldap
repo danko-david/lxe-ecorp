@@ -1,0 +1,10 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+# binds with the configured account and lists the users under the configured base
+found=$(docker exec ecorp-gitlab-1 gitlab-rake gitlab:ldap:check 2>&1) || fail "the LDAP check of GitLab failed: $found"
+
+for u in $(grep -oP '^\s+- user: \K\S+' settings/ad-users.yml)
+do
+	grep -q "sAMAccountName: $u\$" <<< "$found" || fail "GitLab does not find the domain user $u: $found"
+done
