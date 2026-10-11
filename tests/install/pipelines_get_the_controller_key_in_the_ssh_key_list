@@ -1,0 +1,7 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+key=$(cat data/controller/ssh/id_rsa.pub)
+value=$(gitlab_api admin/ci/variables/ECORP_SSH_EXTRA_AUTH .value)
+
+grep -qxF "$key" <<< "$value" || fail "ECORP_SSH_EXTRA_AUTH in gitlab does not contain the public key of the controller: $value"

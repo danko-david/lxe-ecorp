@@ -1,0 +1,16 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+export FAKE_DOCKER_FAIL='^exec ecorp_diorama_builder_container'
+
+if ${SANDBOX}/ecorp build_diorama_image
+then
+	fail "the install inside the builder failed but the build reported success"
+fi
+
+if docker_was_called '^commit '
+then
+	fail "an image was committed from a failed install"
+fi

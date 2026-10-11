@@ -1,7 +1,7 @@
 services:
   ecorp:
     restart: unless-stopped
-    image: ecorp_wrap_base:latest
+    image: ecorp-wrap-base:latest
     cap_add:
       - ALL
     security_opt:

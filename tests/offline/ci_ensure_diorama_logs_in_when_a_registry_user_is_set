@@ -1,0 +1,10 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+export FAKE_DOCKER_FAIL='^pull '
+
+REPO=lxeu/ DOCKER_REGISTRY_USERNAME=robot DOCKER_REGISTRY_PASSWORD=secret ${SANDBOX}/ecorp ci_ensure_diorama
+
+docker_was_called '^login -u robot --password-stdin$' || fail "did not log in to Docker Hub as the given user"

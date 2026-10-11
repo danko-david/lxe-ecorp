@@ -159,8 +159,3 @@ footer a {
 .popup-activate:hover {
     background-color: var(--primary-dark);
 }
-
-.info-block {
-    margin: 10px 0;
-    display: inline-block;
-}

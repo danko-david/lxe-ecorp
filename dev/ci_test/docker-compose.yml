@@ -1,9 +1,9 @@
 services:
   ecorp:
     restart: unless-stopped
-    build: 
-      context: ../../
-      dockerfile: dev/ci_test/Dockerfile
+    # built by `./ecorp ci_test_infra`: this project copied to /ecorp
+    image: ecorp-diorama-build-base:latest
+    command: /usr/sbin/init
     cap_add:
       - ALL
     security_opt:

@@ -4,7 +4,6 @@
     path: /ecorp/data/gitlab/config/gitlab.rb
     block: |
       gitlab_rails['ldap_enabled'] = true
-      gitlab_rails['ldap_sync_worker_cron'] = "0 */10 * * *"
       gitlab_rails['ldap_servers'] = {
         'main' => {
           'label' => 'LDAP',
@@ -17,10 +16,7 @@
           'verify_certificates' => false,
           'active_directory' => false,
           'base' => 'DC={{ lookup("env", "DC_REALM") }}',
-          'user_filter' => '(objectClass=user)',
-          'group_base' => 'OU=groups,DC={{ lookup("env", "DC_REALM") }}',
-          'admin_group' => 'admin',
-          'sync_ssh_keys' => 'sshPublicKey'
+          'user_filter' => '(objectClass=user)'
         }
       }
   register: ldap_config

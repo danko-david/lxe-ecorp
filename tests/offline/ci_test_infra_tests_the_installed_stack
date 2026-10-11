@@ -1,0 +1,4 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+sed -n '/^ci_test_infra()/,/^}/p' ecorp | grep -q '^\s*./ecorp run_tests_install < /dev/null$' || fail "ci_test_infra does not run the install tests after ./ecorp up"

@@ -23,13 +23,44 @@ project_files()
 		-not -path './settings/*.yml'
 }
 
-# Copy of what `prepare` works with in a temporary directory, removed on exit.
-# Sets SANDBOX.
+# Copy of the project in a temporary directory, removed on exit. Sets SANDBOX
+# (the copy, a git repository of its own) and SANDBOX_TMP (its parent, for
+# files that must stay out of the copy).
 make_sandbox()
 {
-	SANDBOX=$(mktemp -d)
-	trap 'rm -rf ${SANDBOX}' EXIT
-	mkdir ${SANDBOX}/settings
-	cp ecorp .env.default ${SANDBOX}/
-	cp settings/*.default ${SANDBOX}/settings/
+	SANDBOX_TMP=$(mktemp -d)
+	trap 'rm -rf ${SANDBOX_TMP}' EXIT
+	SANDBOX=${SANDBOX_TMP}/project
+	mkdir ${SANDBOX}
+	project_files | tar c -T - | tar x -C ${SANDBOX}
+	git init -q ${SANDBOX}
+}
+
+# Put tests/fake/docker in front of the real one. What it was called with is
+# in FAKE_DOCKER_LOG, one call per line; FAKE_DOCKER_FAIL is a pattern of calls
+# that fail.
+use_fake_docker()
+{
+	export FAKE_DOCKER_LOG=${SANDBOX_TMP}/docker.log
+	export PATH=${ROOT}/tests/fake:$PATH
+	touch ${FAKE_DOCKER_LOG}
+}
+
+docker_was_called()
+{
+	grep -qP -- "$1" ${FAKE_DOCKER_LOG}
+}
+
+# For the tests in tests/install
+ZONE=$(source ${ROOT}/.env 2> /dev/null; echo $ECORP_DNS_CORE_ZONE_NAME)
+
+in_controller()
+{
+	docker exec ecorp-controller-1 "$@"
+}
+
+# $1: path under /api/v4, $2: jq filter for the answer
+gitlab_api()
+{
+	in_controller bash -c 'curl -s -H "PRIVATE-TOKEN: $(cat /ecorp/data/controller/provision/root_token)" "http://gitlab.$0/api/v4/$1" | jq -r "$2"' "${ZONE}" "$1" "$2"
 }

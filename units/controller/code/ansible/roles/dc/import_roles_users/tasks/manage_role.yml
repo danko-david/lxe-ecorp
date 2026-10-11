@@ -7,4 +7,4 @@
 - name: "Create group {{ role }} if it does not exist"
   become: true
   command: "{{ ad_exec }} samba-tool group add {{ role }}"
-  when: "role not in existing_groups.stdout"
+  when: "role not in existing_groups.stdout_lines"

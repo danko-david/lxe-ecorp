@@ -1,0 +1,17 @@
+#!/bin/bash
+
+# Stands in for docker in the offline tests. Writes the arguments of every call
+# into FAKE_DOCKER_LOG, keeps a build context that comes on stdin next to it,
+# and fails for calls that match FAKE_DOCKER_FAIL.
+
+echo "$*" >> ${FAKE_DOCKER_LOG}
+
+if [ "$1" = build ] && [ "${@: -1}" = - ]
+then
+	cat > ${FAKE_DOCKER_LOG}.context.tar
+fi
+
+if [ ! -z "$FAKE_DOCKER_FAIL" ] && grep -qP -- "$FAKE_DOCKER_FAIL" <<< "$*"
+then
+	exit 1
+fi

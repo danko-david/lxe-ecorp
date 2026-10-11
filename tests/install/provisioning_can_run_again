@@ -1,0 +1,6 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+./ecorp provision || fail "the second provisioning failed"
+
+[ -f data/controller/last_imports/steps.yml ] || fail "the applied steps were not recorded in data/controller/last_imports"

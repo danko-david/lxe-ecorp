@@ -1,0 +1,15 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+users=$(docker exec ecorp-dc-1 samba-tool user list)
+groups=$(docker exec ecorp-dc-1 samba-tool group list)
+
+for u in $(grep -oP '^\s+- user: \K\S+' settings/ad-users.yml)
+do
+	grep -qxF "$u" <<< "$users" || fail "user $u is not in the domain"
+done
+
+for g in $(grep -oP '^\s+- \K[a-z]+$' settings/ad-users.yml | sort -u)
+do
+	grep -qxF "$g" <<< "$groups" || fail "role $g is not a group in the domain"
+done

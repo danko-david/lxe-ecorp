@@ -1,6 +1,12 @@
+- name: Ensure last_imports directory exists
+  ansible.builtin.file:
+    path: /ecorp/data/controller/last_imports
+    state: directory
+    mode: '0755'
+
 - name: Check if steps.yml has changed
   ansible.builtin.stat:
-    path: /ecorp/data/controller/last_steps.yml
+    path: /ecorp/data/controller/last_imports/steps.yml
   register: last_steps_stat
 
 - name: Read current steps.yml
@@ -10,7 +16,7 @@
 
 - name: Read last successfull steps.yml if it exists
   ansible.builtin.slurp:
-    src: /ecorp/data/controller/last_steps.yml
+    src: /ecorp/data/controller/last_imports/steps.yml
   register: last_steps_content
   when: last_steps_stat.stat.exists
 
@@ -34,6 +40,6 @@
 - name: Copy current steps.yml to last_steps if it was successfull
   ansible.builtin.copy:
     src: /ecorp/settings/steps.yml
-    dest: /ecorp/data/controller/last_steps.yml
+    dest: /ecorp/data/controller/last_imports/steps.yml
     remote_src: false
   when: steps_changed

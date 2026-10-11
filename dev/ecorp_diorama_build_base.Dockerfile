@@ -1,3 +1,3 @@
-FROM ecorp_wrap_base:latest
+FROM ecorp-wrap-base:latest
 COPY . /ecorp
 CMD ["/ecorp/ecorp", "inside_diorama__launch"]

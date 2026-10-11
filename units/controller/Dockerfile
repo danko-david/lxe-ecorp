@@ -9,7 +9,13 @@ FROM debian:latest
     pandoc \
     && apt clean && rm -rf /var/lib/apt/lists/*
 
-    RUN echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+    # ssh: key logins only. Accepted keys: /root/.ssh/authorized_keys and the
+    # ones the entrypoint collects (ECORP_SSH_EXTRA_AUTH and the controller's own)
+    RUN printf '%s\n' \
+    'PermitRootLogin prohibit-password' \
+    'PasswordAuthentication no' \
+    'AuthorizedKeysFile .ssh/authorized_keys /etc/ssh/ecorp_authorized_keys' \
+    > /etc/ssh/sshd_config.d/ecorp.conf
 
 # install docker (source: https://docs.docker.com/engine/install/debian/#install-using-the-repository)
     RUN install -m 0755 -d /etc/apt/keyrings
@@ -26,7 +32,5 @@ FROM debian:latest
     && apt clean && rm -rf /var/lib/apt/lists/*
 
 RUN pip install --break-system-packages python-gitlab
-
-RUN echo "root:password" | chpasswd 
 
 ENTRYPOINT ["/usr/bin/tini", "/ecorp/units/controller/code/ecorp", "--", "entrypoint"]

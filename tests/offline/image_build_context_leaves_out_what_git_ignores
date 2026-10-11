@@ -1,0 +1,24 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+mkdir -p ${SANDBOX}/data/gitlab
+echo 'DC_ADMIN_PASS=private' > ${SANDBOX}/.env
+echo 'ad_users: []' > ${SANDBOX}/settings/ad-users.yml
+echo 'state' > ${SANDBOX}/data/gitlab/state
+echo 'new' > ${SANDBOX}/not_committed_yet
+
+${SANDBOX}/ecorp build_source_image
+
+context=$(tar tf ${FAKE_DOCKER_LOG}.context.tar)
+
+for f in ecorp docker-compose.yml units/dc/dc dev/ecorp_diorama_build_base.Dockerfile not_committed_yet
+do
+	grep -qxF "$f" <<< "$context" || fail "$f is missing from the build context"
+done
+
+if grep -P '^(\.env$|settings/ad-users\.yml$|data/|\.git/)' <<< "$context"
+then
+	fail "the build context contains ignored files"
+fi

@@ -21,15 +21,16 @@
   include_role:
     name: gitlab/wait_for_gitlab
 
-- name: Check root personal access token
-  ansible.builtin.stat:
-    path: /ecorp/data/controller/provision/last_root_pat
-  register: token_stamp
+- name: Check if GitLab accepts the root personal access token
+  ansible.builtin.uri:
+    url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/user"
+    headers:
+      PRIVATE-TOKEN: "{{ gitlab_root_token }}"
+    status_code: [200, 401]
+  register: token_check
 
-- name: Generate root PAT if needed
-  when: >
-    token_stamp.stat.exists == False or 
-    ((ansible_date_time.epoch | int) - (token_stamp.stat.mtime | int) > (360 * 86400))
+- name: Generate root PAT if it is missing, expired or was replaced
+  when: token_check.status != 200
   include_tasks: gen_root_pat.yml
 
 - name: Load ECORP_* environment variables
@@ -39,7 +40,7 @@
 - name: Set global GitLab CI/CD variables
   community.general.gitlab_instance_variable:
     api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
-    api_token: "SUPER_SECRET_ROOT_TOKEN"
+    api_token: "{{ gitlab_root_token }}"
     state: present
     purge: false
     variables:

@@ -12,5 +12,6 @@ vars=$({
 
 for v in $vars
 do
-	grep -q "^$v=" .env.default || fail "docker-compose.yml uses $v but .env.default does not define it"
+	# an optional variable is there commented out
+	grep -q "^#\?$v=" .env.default || fail "docker-compose.yml uses $v but .env.default does not define it"
 done

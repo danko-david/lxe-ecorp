@@ -2,7 +2,7 @@
 - name: Ensure GitLab group {{ repo.path }} exists
   community.general.gitlab_group:
     api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
-    api_token: "SUPER_SECRET_ROOT_TOKEN"
+    api_token: "{{ gitlab_root_token }}"
     name: "{{ repo.path }}"
     path: "{{ repo.path }}"
     state: present
@@ -33,7 +33,7 @@
 - name: Set GitLab project {{ repo.path }}/{{ repo.repo }} visibility to public
   community.general.gitlab_project:
     api_url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}"
-    api_token: "SUPER_SECRET_ROOT_TOKEN"
+    api_token: "{{ gitlab_root_token }}"
     name: "{{ repo.repo }}"
     group: "{{ repo.path }}"
     visibility: public

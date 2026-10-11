@@ -6,7 +6,7 @@
 
 - name: "Set user facts"
   set_fact:
-    user_exists: "{{ user.user in existing_users.stdout }}"
+    user_exists: "{{ user.user in existing_users.stdout_lines }}"
 
 - name: "Create user {{ user.user }} if it does not exist"
   become: true

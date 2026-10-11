@@ -1,0 +1,7 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+[ "$(gitlab_api user .username)" = root ] || fail "the token in data/controller/provision/root_token is not the token of root"
+
+code=$(in_controller curl -s -o /dev/null -w '%{http_code}' -H 'PRIVATE-TOKEN: SUPER_SECRET_ROOT_TOKEN' "http://gitlab.${ZONE}/api/v4/user")
+[ "$code" = 401 ] || fail "the fixed token of versions before 1.2.0 is still accepted (status $code)"

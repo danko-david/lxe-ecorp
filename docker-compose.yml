@@ -46,6 +46,8 @@ services:
       - DC_REALM
       - DC_DOMAIN
       - DC_ADMIN_PASS
+      - HOME_WWW_USER
+      - HOME_WWW_PASSWORD
     volumes:
       - ./:/ecorp
       - ./data/controller/root:/root

@@ -3,7 +3,7 @@
     url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/pipeline"
     method: POST
     headers:
-      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+      PRIVATE-TOKEN: "{{ gitlab_root_token }}"
     body_format: json
     body: >-
       {%- set vars_list = [] -%}
@@ -19,7 +19,7 @@
     url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/pipelines/{{ pipeline_trigger.json.id }}"
     method: GET
     headers:
-      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+      PRIVATE-TOKEN: "{{ gitlab_root_token }}"
   register: pipeline_status
   until: pipeline_status.json.status in ['success', 'skipped']
   retries: 20
@@ -30,7 +30,7 @@
     url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/pipelines/{{ pipeline_trigger.json.id }}/jobs?per_page=100"
     method: GET
     headers:
-      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+      PRIVATE-TOKEN: "{{ gitlab_root_token }}"
   register: pipeline_jobs
   until: "pipeline_jobs.json | selectattr('name', 'equalto', job.job) | list | length > 0"
   retries: 10
@@ -41,7 +41,7 @@
     url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/jobs/{{ (pipeline_jobs.json | selectattr('name', 'equalto', job.job) | first).id }}/play"
     method: POST
     headers:
-      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+      PRIVATE-TOKEN: "{{ gitlab_root_token }}"
     status_code: [200, 201]
   register: job_play_result
   when: "(pipeline_jobs.json | selectattr('name', 'equalto', job.job) | first).status == 'manual'"
@@ -51,7 +51,7 @@
     url: "http://gitlab.{{ ECORP_DNS_CORE_ZONE_NAME }}/api/v4/projects/{{ job.project | urlencode | regex_replace('/', '%2F') }}/jobs/{{ (pipeline_jobs.json | selectattr('name', 'equalto', job.job) | first).id }}"
     method: GET
     headers:
-      PRIVATE-TOKEN: "SUPER_SECRET_ROOT_TOKEN"
+      PRIVATE-TOKEN: "{{ gitlab_root_token }}"
   register: specific_job_status
   until: specific_job_status.json.status in ['success', 'failed', 'canceled', 'skipped']
   retries: 300

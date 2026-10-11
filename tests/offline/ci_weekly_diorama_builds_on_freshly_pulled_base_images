@@ -1,0 +1,9 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+
+REPO=lxeu/ ${SANDBOX}/ecorp ci_weekly_diorama
+
+docker_was_called '^build --pull --no-cache -t ecorp-wrap-base ' || fail "the base image was built from the local cache"

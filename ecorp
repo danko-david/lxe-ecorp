@@ -87,7 +87,20 @@ provision()
 ensure_wrap_base_image()
 {
 	cd ${ROOT}
-	docker build -t ecorp_wrap_base -f dev/ecorp_wrap_base.Dockerfile dev
+	docker build ${IMAGE_BUILD_OPTS} -t ecorp-wrap-base -f dev/ecorp_wrap_base.Dockerfile dev
+}
+
+build_source_image()
+{
+	# Image with this project copied to /ecorp. Only what git would commit gets
+	# in: no ignored file (.env, settings/*.yml, data) and no .git
+	ensure_wrap_base_image
+	cd ${ROOT}
+	files=$(git ls-files -co --exclude-standard) || { echo "Building the image needs a git checkout of the project" >&2; exit 1; }
+	for f in $files
+	do
+		if [ -e $f ]; then echo $f; fi
+	done | tar c -T - | docker build -t ecorp-diorama-build-base -f dev/ecorp_diorama_build_base.Dockerfile -
 }
 
 run_in_container()
@@ -123,15 +136,16 @@ EOF
 ci_test_infra()
 {
 	_rh_try_ret_help 'CI/CD: Launch the ecorp infrastructure in a container for testing.'
-	ensure_wrap_base_image
+	build_source_image
 	cd ${ROOT}
 	cd dev/ci_test
-	docker compose -p ci_test up -d --build
+	docker compose -p ci_test up -d
 
 	cleanup()
 	{
+		ex=$?
 		docker compose -p ci_test down -v || true
-		exit 0
+		exit $ex
 	}
 
 	trap cleanup EXIT
@@ -140,46 +154,70 @@ ci_test_infra()
 	set -ex
 	cd /ecorp
 	./ecorp wait_docker_ready
-	./ecorp up
+	# stdin is this script: keep the commands from reading it
+	./ecorp up < /dev/null
+	./ecorp run_tests_install < /dev/null
 EOF
+}
+
+diorama_registry()
+{
+	# REPO is the prefix of the published image name: "lxeu/" on Docker Hub,
+	# "registry.example.com/group/" on another registry
+	if [ -z "$REPO" ] && [ ! -z "$DOCKER_REGISTRY" ]
+	then
+		REPO=${DOCKER_REGISTRY}/
+	fi
+
+	if [ ! -z "$DOCKER_REGISTRY_USERNAME" ]
+	then
+		echo "$DOCKER_REGISTRY_PASSWORD" | docker login $DOCKER_REGISTRY -u "$DOCKER_REGISTRY_USERNAME" --password-stdin
+	fi
+}
+
+diorama_publish()
+{
+	# Name the image just built as ${REPO}ecorp-diorama:$1, and as "latest" if
+	# not prevented. Push them if there is a REPO.
+	tags=$1
+	if [ -z "$NOT_LATEST" ]
+	then
+		tags="$tags latest"
+	fi
+
+	for tag in $tags
+	do
+		docker tag ecorp-diorama:$ECORP_VERSION ${REPO}ecorp-diorama:$tag
+		if [ ! -z "$REPO" ]
+		then
+			docker push ${REPO}ecorp-diorama:$tag
+		fi
+	done
 }
 
 ci_ensure_diorama()
 {
 	_rh_try_ret_help 'CI/CD: Build and publish the ecorp-diorama image if the current version is not in the registry yet.'
+	diorama_registry
 
-	IMAGE=ecorp-diorama
-	VERSION=$ECORP_VERSION
-
-	if ! docker pull ${REPO}${IMAGE}:${VERSION} || [ ! -z $FORCE_BUILD_IMAGE ]
+	if [ -z "$FORCE_BUILD_IMAGE" ] && docker pull ${REPO}ecorp-diorama:${ECORP_VERSION}
 	then
-		
-		if [ ! -z $DOCKER_REGISTRY ]
-		then
-			echo "$DOCKER_REGISTRY_PASSWORD" | docker login $DOCKER_REGISTRY -u $DOCKER_REGISTRY_USERNAME --password-stdin
-			export REPO=${DOCKER_REGISTRY}/
-		fi
-
-		build_diorama_image
-
-		if [ ! -z ${REPO} ]
-		then
-			docker push ${REPO}${IMAGE}:${VERSION}
-		fi
-
-		# Also set "latest" tag on this image if not prevented
-		if [ -z $NOT_LATEST ]
-		then
-			docker tag ${REPO}${IMAGE}:${VERSION} ${REPO}${IMAGE}:latest
-			if [ ! -z ${REPO} ]
-			then
-			docker push ${REPO}${IMAGE}:latest
-			fi
-		fi
-		else
-	echo "Version already present $IMAGE:$VERSION"
-	exit 0
+		echo "Version already present ${REPO}ecorp-diorama:${ECORP_VERSION}"
+		exit 0
 	fi
+
+	build_diorama_image
+	diorama_publish ${ECORP_VERSION}
+}
+
+ci_weekly_diorama()
+{
+	_rh_try_ret_help 'CI/CD: Rebuild the ecorp-diorama image on the newest base images and publish it as <version>-w<week of the year>. Meant for a weekly schedule.'
+	diorama_registry
+
+	IMAGE_BUILD_OPTS="--pull --no-cache"
+	build_diorama_image
+	diorama_publish ${ECORP_VERSION}-w$(date +%V)
 }
 
 wait_docker_ready()
@@ -225,17 +263,15 @@ inside_diorama__launch()
 build_diorama_image()
 {
 	_rh_try_ret_help 'Build ecorp-diorama image: an image contains this stack installed and ready to start'
-	ensure_wrap_base_image
-	cd ${ROOT}
-
-	docker build -t tmp_ecorp_diorama_build_base -f dev/ecorp_diorama_build_base.Dockerfile .
+	build_source_image
 
 	cleanup()
 	{
+		ex=$?
 		docker stop ecorp_diorama_builder_container || true
 		docker rm ecorp_diorama_builder_container || true
-		docker volume rm ecorp_diorama_builder_docker ecorp_diorama_builder_containerd
-		exit 0
+		docker volume rm ecorp_diorama_builder_docker ecorp_diorama_builder_containerd || true
+		exit $ex
 	}
 
 	trap cleanup EXIT
@@ -255,7 +291,7 @@ build_diorama_image()
 	-v ecorp_diorama_builder_docker:/var/lib/docker \
 	-v ecorp_diorama_builder_containerd:/var/lib/containerd \
 	--name ecorp_diorama_builder_container \
-		tmp_ecorp_diorama_build_base 
+		ecorp-diorama-build-base
 
 	docker exec ecorp_diorama_builder_container /ecorp/ecorp inside_diorama__build
 	docker stop ecorp_diorama_builder_container
@@ -263,12 +299,11 @@ build_diorama_image()
 	docker image tag ecorp-diorama:$ECORP_VERSION ecorp-diorama:latest
 }
 
-run_tests()
+run_test_dir()
 {
-	_rh_try_ret_help 'Run the offline tests in tests/offline (needs no docker or network). $1: optional part of a test name to select tests'
 	cd ${ROOT}
 	failed=0
-	for t in tests/offline/*${1}*
+	for t in $1/*${2}*
 	do
 		if out=$($t 2>&1)
 		then
@@ -288,6 +323,18 @@ run_tests()
 		echo "$failed test(s) failed"
 		exit 1
 	fi
+}
+
+run_tests()
+{
+	_rh_try_ret_help 'Run the offline tests in tests/offline (needs no docker or network). $1: optional part of a test name to select tests'
+	run_test_dir tests/offline "$1"
+}
+
+run_tests_install()
+{
+	_rh_try_ret_help 'Run the tests in tests/install against the running, provisioned stack. They restart parts of it. $1: optional part of a test name'
+	run_test_dir tests/install "$1"
 }
 
 purge()

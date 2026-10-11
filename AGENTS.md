@@ -57,7 +57,7 @@ _First version, written from how the repository looks at 1.2.0. Pending review b
 - All runtime state is under `./data` (plus the `dc` volume). Do not read, quote, move or commit
   the contents of `data/`, `.env` or `settings/*.yml` unless the user names the file.
 - Provisioning records what it has applied as plain files under `data/controller/`
-  (`last_imports/`, `last_steps.yml`, `provision/`); deleting one makes that part run again.
+  (`last_imports/`, `provision/`); deleting one makes that part run again.
 
 ## 5. Provisioning (Ansible)
 
@@ -79,7 +79,11 @@ _First version, written from how the repository looks at 1.2.0. Pending review b
   (`tests/offline/version_matches_the_topmost_changelog_entry`).
 - The version is also the tag of the published `ecorp-diorama` image: `ci_ensure_diorama`
   builds and publishes on `master` whenever the registry has no image for the current version.
-  Raising the version therefore publishes; changing the stack without raising it does not.
+  Raising the version therefore publishes; changing the stack without raising it does not,
+  until the weekly build (`ci_weekly_diorama`) publishes it as `<version>-w<week>`.
+- Images are built from what git would commit (`build_source_image`), never from the whole
+  working directory. Service images stay unpinned on purpose, the weekly build ships their
+  fixes.
 - Add a line to `CHANGELOG.md` for every change a user of the project would notice, in the same
   change. Format: version heading `X.Y.Z:`, tab-indented `- ` items, newest first.
 - "commit changes" means: run `./ecorp run_tests`, bring `README.md`, the container files and
@@ -91,21 +95,30 @@ _First version, written from how the repository looks at 1.2.0. Pending review b
 
 - `./ecorp run_tests` runs every executable in `tests/offline/`. They need no docker, network
   or credentials, and must pass before a change is reported as done. CI runs them first.
+- `./ecorp run_tests_install` runs `tests/install/` against a running, provisioned stack.
+  `./ecorp ci_test_infra` installs the stack from zero in a container and runs them there; it
+  needs docker and the internet, takes long and is not a gate.
 - A test is a bash script named after the behaviour it shows, in plain words, one behaviour per
   file; it sources `tests/lib`, exits non-zero on failure and 77 when it has to be skipped.
   Adding a file adds the test.
-- Tests work on a copy in a temporary directory (`make_sandbox`) and never touch `data/`, `.env`
-  or `settings/*.yml`.
-- Any check written to verify a change is added there in the same change.
-- What needs docker and the internet is the full install, `./ecorp ci_test_infra`. It takes
-  long and is not a gate. A change to a unit, the compose file or a role cannot be verified by
-  the offline tests: say so, and say whether the full install was run.
+- Offline tests work on a copy in a temporary directory (`make_sandbox`) and never touch
+  `data/`, `.env` or `settings/*.yml`. What a command does with docker is tested against
+  `tests/fake/docker` (`use_fake_docker`), which records its calls instead of doing anything.
+- Any check written to verify a change is added there in the same change: offline if it can be,
+  as an install test if it needs the running stack.
+- A change to a unit, the compose file or a role is not verified by the offline tests: say so,
+  and say whether the full install was run.
 
 ## 8. Change hygiene
 
 - Do only what was asked. Known problems are listed in `TODO.md`; they are not fixed as a side
   effect. New findings are added there with the reason, not left as a comment in the code.
-- Update `README.md` when a command, variable, step type, label or directory changes.
+- Update `README.md` when a command, variable, step type, label or directory changes, and the
+  page of the unit in `doc/` when its behaviour changes. `doc/*.md` is rendered by the web
+  interface: link between pages with plain relative links (`dns.md`, from the README
+  `doc/dns.md`), the interface rewrites them.
+- Secrets are generated per installation into `data/` (`provision/root_token`, `ssh/id_rsa`),
+  never written into the repository as a constant.
 - Linux only, bash and standard tools. Do not add a dependency to the host side; what a
   container needs goes into its `Dockerfile`.
 - Only scripts are executable, and they carry no extension unless something requires one

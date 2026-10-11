@@ -1,0 +1,9 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+out=$(in_controller curl -s 'http://localhost/?page=dbg')
+
+if grep -q 'DC_ADMIN_PASS' <<< "$out"
+then
+	fail "/?page=dbg prints the environment"
+fi

@@ -1,0 +1,11 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+export FAKE_DOCKER_FAIL='^compose -p ci_test exec'
+
+if ${SANDBOX}/ecorp ci_test_infra
+then
+	fail "the install failed but ci_test_infra reported success"
+fi

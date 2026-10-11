@@ -10,7 +10,7 @@ cat << EOF
 Content-type: text/html
 
 <!doctype html>
-<html lang="hu">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,16 +47,6 @@ Content-type: text/html
 	<script src="/script.js"></script>
 </body>
 </html>
-EOF
-exit 0
-}
-
-ajax()
-{
-	cat << EOF
-Content-type: $1
-
-$2
 EOF
 exit 0
 }
@@ -114,6 +104,13 @@ EOF
 		tr "${kv[0]}" "${kv[1]}"
 	done
 	echo "</table>"
+}
+
+# Markdown file as HTML. Links to doc/*.md, written so they work when the
+# repository is browsed, are pointed to the doc= parameter of this page.
+render_doc()
+{
+	pandoc -f gfm -t html $1 | sed -E 's#href="(doc/)?([a-z0-9_-]+\.md)"#href="/?doc=doc/\2"#g'
 }
 
 exec_addc()
@@ -183,14 +180,22 @@ EOF
 echo '</table>'
 }
 
-chk_prov()
+provision_running()
 {
-	[ 0 = $(ps aux | grep ansible-playbook | grep -v grep | wc -l) ]
+	pgrep -f 'ansible-playbook .*provision\.yml' > /dev/null
+}
+
+# Sets "file" to the log asked for in the request. Only names the provisioning
+# gives to its logs are accepted.
+requested_log()
+{
+	file=${_GET['file']}
+	[[ "$file" =~ ^[0-9_-]+$ ]] && [ -f "${PROV_LOG_DIR}${file}" ]
 }
 
 _raw_start_provision()
 {
-	if ! chk_prov
+	if provision_running
 	then
 		last_file=$(ls -t ${PROV_LOG_DIR} | head -1)
 		page 'Provision already running, follow here: <a href="/?page=follow_log&file='$last_file'">'$last_file'</a>'
@@ -200,7 +205,7 @@ _raw_start_provision()
 	sudo /ecorp/units/controller/code/ecorp controller_ansible_provision  > /dev/null &
 
 	rem=10
-	while chk_prov && [ $rem '>' 0 ]
+	while ! provision_running && [ $rem '>' 0 ]
 	do
 		rem=$(expr $rem - 1)
 		sleep 1
@@ -215,11 +220,15 @@ _raw_start_provision()
 
 _page_follow_log()
 {
+	if ! requested_log
+	then
+		echo "No such provisioning log"
+		return
+	fi
 cat << EOF
 	<h1>Provisioning log output</h1>
 	<table>
 EOF
-	file=${_GET['file']}
 
 	X=th tr "Following log output of: "$file
 cat << EOF
@@ -239,15 +248,14 @@ EOF
 
 _raw_follow_log()
 {
+	requested_log || page "No such provisioning log"
 	echo "Content-Type: text/event-stream"
 	echo "Cache-Control: no-cache"
 	echo "X-Content-Type-Options: nosniff"
 	echo ""
 
-	file=${_GET['file']}
-	
 	tail -n 9999999 -f ${PROV_LOG_DIR}${file} &
-	TPID=$?
+	TPID=$!
 
 	exit_file=${PROV_LOG_DIR}${file}".exit"
 	
@@ -259,24 +267,6 @@ _raw_follow_log()
 	echo "Provisioning exited: "$ex
 	kill $TPID
 	exit $ex
-}
-
-dbg()
-{
-	echo
-	echo "> $@"
-	$@
-}
-
-_page_dbg()
-{
-	echo "<pre>"
-	set -a
-	source /ecorp/.env
-	dbg export
-	dbg docker ps
-	dbg exec_addc samba-tool user list
-	echo "</pre>"
 }
 
 #### Main - controller routing
@@ -314,18 +304,17 @@ if [ ! -z "${_GET['doc']}" ]
 then
 	doc=$(readlink -f "/ecorp/${_GET['doc']}")
 	# render only docs under /doc/
-	if [[ "$doc" =~ ^/ecorp/doc/.* ]]
+	if [[ "$doc" =~ ^/ecorp/doc/.* ]] && [ -f "$doc" ]
 	then
-		page "$(pandoc -t html $doc)"
+		page "$(render_doc $doc)"
 	else
-		page "Documentation $doc not found!"
+		page "Documentation not found!"
 	fi
 fi
 
 # manage entities
 manage_ent page
-manage_ent ajax
 manage_ent raw
 
 # main page
-page "$(pandoc -t html /ecorp/README.md)"
+page "$(render_doc /ecorp/README.md)"

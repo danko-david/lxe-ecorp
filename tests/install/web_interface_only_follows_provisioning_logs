@@ -1,0 +1,6 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+out=$(in_controller curl -s 'http://localhost/?raw=follow_log&file=../../../../.env')
+
+grep -q 'No such provisioning log' <<< "$out" || fail "a file outside the log directory was not refused: $out"

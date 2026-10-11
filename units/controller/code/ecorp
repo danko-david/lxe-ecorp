@@ -25,6 +25,8 @@ _rh_try_ret_help()
 
 
 PROV_LOG_DIR=/ecorp/data/controller/provision/logs/
+SSH_KEY=/ecorp/data/controller/ssh/id_rsa
+ROOT_TOKEN_FILE=/ecorp/data/controller/provision/root_token
 
 ##### In container functions #####
 
@@ -62,6 +64,7 @@ entrypoint()
 	sed -i '/session    required     pam_loginuid.so/c\session    optional   pam_loginuid.so' /etc/pam.d/sshd
 	
 	gen_ssh_master_key
+	ssh_authorized_keys > /etc/ssh/ecorp_authorized_keys
 
 	service ssh start
 
@@ -73,10 +76,41 @@ entrypoint()
 
 gen_ssh_master_key()
 {
-	if [ -e /ecorp/data/controller/ssh/id_rsa ]
+	if ! [ -e $SSH_KEY ]
 	then
-		mkdir -p /ecorp/data/controller/ssh/
-		ssh-keygen -q -t rsa -N '' -f /ecorp/data/controller/ssh/id_rsa <<< y
+		mkdir -p $(dirname $SSH_KEY)
+		ssh-keygen -q -t rsa -N '' -f $SSH_KEY
+	fi
+
+	# make it the default key of root, unless root has its own
+	mkdir -p /root/.ssh
+	if ! [ -e /root/.ssh/id_rsa ]
+	then
+		ln -s $SSH_KEY /root/.ssh/id_rsa
+	fi
+}
+
+ssh_authorized_keys()
+{
+	# Keys accepted on machines managed by this system: the key of the
+	# controller and the extra ones from .env, one per line
+	cat ${SSH_KEY}.pub
+	(
+		source /ecorp/.env
+		if [ ! -z "$ECORP_SSH_EXTRA_AUTH" ]
+		then
+			echo "$ECORP_SSH_EXTRA_AUTH"
+		fi
+	)
+}
+
+gen_root_token()
+{
+	# Access token of the gitlab root user, generated once per installation
+	if ! [ -e $ROOT_TOKEN_FILE ]
+	then
+		mkdir -p $(dirname $ROOT_TOKEN_FILE)
+		(umask 077; echo "ecorp-$(head -c 30 /dev/urandom | od -An -tx1 | tr -d ' \n')" > $ROOT_TOKEN_FILE)
 	fi
 }
 
@@ -84,34 +118,45 @@ controller_ansible_provision()
 {
 	cd /ecorp/units/controller/code/ansible
 
-	if ! chk_prov
+	if provision_running
 	then
 		echo "Provision already running"
 		exit 1
 	fi
 
+	gen_root_token
+
+	# location used before 1.2.0
+	if [ -e /ecorp/data/controller/last_steps.yml ]
+	then
+		mkdir -p /ecorp/data/controller/last_imports
+		mv /ecorp/data/controller/last_steps.yml /ecorp/data/controller/last_imports/steps.yml
+	fi
+
 	log=${PROV_LOG_DIR}$(date +'%Y-%m-%d_%H-%M-%S')
 	set -a
 	source /ecorp/.env
+	ECORP_SSH_EXTRA_AUTH=$(ssh_authorized_keys)
 	ansible-playbook -i hosts.yml provision.yml "$@" | tee -a $log
 	ex=${PIPESTATUS[0]}
 	echo $ex > ${log}".exit"
+	return $ex
 }
 
-chk_prov()
+provision_running()
 {
-	[ 0 = $(ps aux | grep ansible-playbook | grep -v grep | wc -l) ]
+	pgrep -f 'ansible-playbook .*provision\.yml' > /dev/null
 }
 
 follow_provision()
 {
 	_rh_try_ret_help 'Follows running provision'
 
-	if chk_prov
+	if ! provision_running
 	then
 		echo "Provisioning might not started yet, waiting a little bit"
 		rem=30
-		while chk_prov && [ $rem '>' 0 ]
+		while ! provision_running && [ $rem '>' 0 ]
 		do
 			rem=$(expr $rem - 1)
 			sleep 1
@@ -119,7 +164,7 @@ follow_provision()
 		done
 	fi
 
-	if chk_prov
+	if ! provision_running
 	then
 		echo "No provision running. exiting"
 		exit 0
@@ -129,7 +174,7 @@ follow_provision()
 	last_file=$(ls -t ${PROV_LOG_DIR} | head -1)
 	
 	tail -n 9999999 -f ${PROV_LOG_DIR}${last_file} &
-	TPID=$?
+	TPID=$!
 
 	exit_file=${PROV_LOG_DIR}${last_file}".exit"
 	
@@ -138,6 +183,7 @@ follow_provision()
 		sleep 1
 	done
 	ex=$(cat $exit_file)
+	kill $TPID
 	echo "Provisioning exited: "$ex
 	exit $ex
 }

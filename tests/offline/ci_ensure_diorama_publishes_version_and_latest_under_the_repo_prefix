@@ -1,0 +1,17 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+version=$(grep -m 1 -oP '(?<=^ECORP_VERSION=).*' ecorp)
+
+# the version is not in the registry yet
+export FAKE_DOCKER_FAIL='^pull '
+REPO=lxeu/ ${SANDBOX}/ecorp ci_ensure_diorama
+
+docker_was_called "^pull lxeu/ecorp-diorama:$version$" || fail "did not look for the version under the prefix"
+for tag in $version latest
+do
+	docker_was_called "^tag ecorp-diorama:$version lxeu/ecorp-diorama:$tag$" || fail "the built image was not named lxeu/ecorp-diorama:$tag"
+	docker_was_called "^push lxeu/ecorp-diorama:$tag$" || fail "lxeu/ecorp-diorama:$tag was not pushed"
+done

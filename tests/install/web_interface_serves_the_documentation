@@ -1,0 +1,5 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+in_controller curl -s 'http://localhost/' | grep -q 'href="/?doc=doc/controller.md"' || fail "the main page does not link to the unit documentation"
+in_controller curl -s 'http://localhost/?doc=doc/controller.md' | grep -q '<h1' || fail "doc/controller.md is not rendered"

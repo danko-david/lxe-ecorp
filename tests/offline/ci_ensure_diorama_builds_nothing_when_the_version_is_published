@@ -1,0 +1,12 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+
+REPO=lxeu/ ${SANDBOX}/ecorp ci_ensure_diorama
+
+if docker_was_called '^(build|run|commit|push) '
+then
+	fail "the version is in the registry but something was built or pushed: $(cat ${FAKE_DOCKER_LOG})"
+fi

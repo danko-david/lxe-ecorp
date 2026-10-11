@@ -1,0 +1,10 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+export FAKE_DOCKER_FAIL='^compose -p ci_test exec'
+
+${SANDBOX}/ecorp ci_test_infra || true
+
+docker_was_called '^compose -p ci_test down -v$' || fail "the test containers and volumes were left behind"

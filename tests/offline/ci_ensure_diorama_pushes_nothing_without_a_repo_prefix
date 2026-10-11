@@ -1,0 +1,14 @@
+#!/bin/bash
+. $(dirname $(readlink -f $0))/../lib
+
+make_sandbox
+use_fake_docker
+export FAKE_DOCKER_FAIL='^pull '
+
+${SANDBOX}/ecorp ci_ensure_diorama
+
+docker_was_called '^commit ' || fail "the image was not built"
+if docker_was_called '^(push|login) '
+then
+	fail "pushed or logged in although neither REPO nor a registry user is set"
+fi
