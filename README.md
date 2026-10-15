@@ -151,6 +151,7 @@ Variables these read:
 | `doc/` | Documentation of the units, also shown in the management web interface. |
 | `dev/` | The wrap container, the diorama image and the CI install test. |
 | `tests/` | Offline tests, install tests and the fake docker they use. |
+| `backlog/` | Open work as Backlog.md tickets. |
 | `data/` | Runtime state of every service, ignored by git, removed by `purge`. |
 
-Open work and known problems are listed in `TODO.md`, changes in `CHANGELOG.md`.
+Open work and known problems are tickets on the [Backlog.md](https://github.com/MrLesk/Backlog.md) board in `backlog/` (`backlog board`, `backlog browser` for the web view), changes are in `CHANGELOG.md`.

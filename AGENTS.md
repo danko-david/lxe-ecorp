@@ -3,7 +3,8 @@
 Rules for anyone (human or AI tool) changing this repo. `README.md` describes what the project
 is; this file says how to change it.
 
-_First version, written from how the repository looks at 1.2.0. Pending review by David._
+_First version, written from how the repository looks at 1.2.0, open work moved to Backlog.md in
+1.2.1. Pending review by David._
 
 ## 1. `./ecorp` is the only entry point
 
@@ -111,8 +112,10 @@ _First version, written from how the repository looks at 1.2.0. Pending review b
 
 ## 8. Change hygiene
 
-- Do only what was asked. Known problems are listed in `TODO.md`; they are not fixed as a side
-  effect. New findings are added there with the reason, not left as a comment in the code.
+- Do only what was asked. Known problems and open work are tickets on the Backlog.md board in
+  `backlog/` (`backlog task list --plain`, `backlog task create`); they are not fixed as a side
+  effect. A new finding becomes a ticket with the reason, not a comment in the code or a
+  `TODO.md`. The change that resolves a ticket sets it to Done.
 - Update `README.md` when a command, variable, step type, label or directory changes, and the
   page of the unit in `doc/` when its behaviour changes. `doc/*.md` is rendered by the web
   interface: link between pages with plain relative links (`dns.md`, from the README

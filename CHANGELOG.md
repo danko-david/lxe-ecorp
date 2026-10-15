@@ -1,3 +1,6 @@
+1.2.1:
+	- Open work moved from TODO.md to tickets on a Backlog.md board in backlog/ (backlog board, backlog browser), one ticket per former item.
+
 1.2.0:
 	Fixes from a review of the whole repository, tests, documentation and policy. Existing installations: see the items marked "Upgrade".
 	- The access token of the GitLab root user is generated once per installation (data/controller/provision/root_token) instead of being the same fixed string everywhere. Upgrade: the next provisioning replaces the old token by itself.

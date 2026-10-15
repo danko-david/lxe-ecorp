@@ -1,10 +1,11 @@
 #!/bin/bash
 . $(dirname $(readlink -f $0))/../lib
 
-for f in $(project_files)
+# one name per line: ticket files have spaces in their names
+while IFS= read -r f
 do
-	if head -n 1 $f | grep -q '^#!/bin/bash'
+	if head -n 1 "$f" | grep -q '^#!/bin/bash'
 	then
-		bash -n $f || fail "$f does not parse"
+		bash -n "$f" || fail "$f does not parse"
 	fi
-done
+done < <(project_files)
